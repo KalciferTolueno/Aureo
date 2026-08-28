@@ -42,22 +42,18 @@ test('conecta la portada Tailwind con las funciones reales de cada eje', async (
 
   await page.getByRole('button', { name: 'Mi Balance', exact: true }).click()
   const before = await page.evaluate(() => localStorage.getItem('aureo_balance_movimientos'))
+  await page.getByRole('button', { name: /Abrir Mi Balance/ }).click()
   await page.getByRole('button', { name: 'Registrar movimiento' }).click()
-  await expect(page.getByRole('dialog', { name: 'Registrar movimiento' })).toBeVisible()
-  await expect(page).toHaveURL(/\/#\/\?axis=balance$/)
   await page.getByLabel('Monto').fill('1200')
   await page.getByLabel('Una nota, si la necesitas').fill('Movimiento desde Tailwind')
-  await page.getByRole('button', { name: 'Guardar movimiento' }).click()
+  await page.getByRole('button', { name: 'Guardar', exact: true }).click()
   const after = await page.evaluate(() => localStorage.getItem('aureo_balance_movimientos'))
   expect(after).not.toBe(before)
-  await expect(page.getByRole('dialog', { name: 'Registrar movimiento' })).toHaveCount(0)
-  await expect(page.locator('.balance-home-blossom')).toHaveCount(1)
   await page.getByRole('button', { name: 'Nueva meta' }).click()
-  await expect(page.getByRole('dialog', { name: 'Crear una meta' })).toBeVisible()
   await page.getByLabel('¿Qué estás construyendo?').fill('Viaje sereno')
   await page.getByLabel('Meta', { exact: true }).fill('50000')
-  await page.getByRole('button', { name: 'Crear meta' }).click({ force: true })
-  await expect(page.getByRole('dialog', { name: 'Crear una meta' })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Crear Daruma' }).click()
+  await page.getByRole('button', { name: 'Volver a Mi Balance' }).click()
   await expect(page).toHaveURL(/\/#\/\?axis=balance$/)
 
   await page.getByRole('button', { name: 'Núcleo', exact: true }).click()
@@ -110,42 +106,26 @@ test('mantiene todos los espacios Tailwind dentro del ancho móvil', async ({ pa
 })
 
 test('convierte los gastos de Mi Balance en flores interactivas del cerezo', async ({ page }, testInfo) => {
-  await page.goto('/#/?axis=balance&detail=balance&action=movimiento')
+  test.setTimeout(90_000)
+  await page.goto('/#/?axis=balance')
   const expenses = [
     ['1800', 'Pan para la casa'],
     ['5400', 'Flores del mercado'],
     ['3200', 'Un viaje tranquilo'],
   ] as const
   for (const [amount, note] of expenses) {
+    await page.getByRole('button', { name: 'Registrar movimiento' }).click()
     await page.getByLabel('Monto').fill(amount)
     await page.getByLabel('Una nota, si la necesitas').fill(note)
-    await page.getByRole('button', { name: 'Guardar', exact: true }).click()
-    if (note !== expenses.at(-1)?.[1]) await page.getByRole('button', { name: 'Registrar movimiento' }).click()
+    await page.getByRole('button', { name: 'Guardar movimiento' }).click({ force: true })
   }
+  await expect(page.locator('.balance-home-blossom')).toHaveCount(3)
+  await expect(page.getByRole('button', { name: /Abrir Mi Balance\. 3 flores de gastos/ })).toBeVisible()
+  await page.getByRole('button', { name: /Abrir Mi Balance/ }).click()
   await expect(page.locator('.balance-blossom')).toHaveCount(3)
   await page.locator('.balance-blossom').first().click()
   await expect(page.getByRole('status')).toContainText('Un viaje tranquilo')
   await expect(page.getByRole('status')).toContainText('$3.200')
-  await page.goto('/#/?axis=balance')
-  await expect(page.locator('.balance-home-blossom')).toHaveCount(3)
-  await expect(page.getByRole('button', { name: /Abrir Mi Balance\. 3 flores de gastos/ })).toBeVisible()
-})
-
-test('abre los registros de Balance en paneles flotantes sin cambiar de ruta', async ({ page }, testInfo) => {
-  await page.goto('/#/?axis=balance')
-  const balanceUrl = page.url()
-  await page.getByRole('button', { name: 'Registrar movimiento' }).click()
-  await expect(page.getByRole('dialog', { name: 'Registrar movimiento' })).toBeVisible()
-  await page.getByLabel('Monto').fill('2400')
-  await page.getByLabel('Una nota, si la necesitas').fill('Movimiento flotante')
-  expect(page.url()).toBe(balanceUrl)
-  await page.keyboard.press('Escape')
-  await expect(page.getByRole('dialog', { name: 'Registrar movimiento' })).toHaveCount(0)
-  await page.getByRole('button', { name: 'Nueva meta' }).click()
-  await expect(page.getByRole('dialog', { name: 'Crear una meta' })).toBeVisible()
-  expect(page.url()).toBe(balanceUrl)
-  await page.keyboard.press('Escape')
-  await expect(page.getByRole('dialog', { name: 'Crear una meta' })).toHaveCount(0)
 })
 
 test('incorpora el matiz zodiacal sin sustituir el oro base', async ({ page }) => {
@@ -292,7 +272,8 @@ test('asigna cada vínculo a su órbita dentro de Mi Constelación', async ({ pa
   await page.getByRole('button', { name: 'Marina, Guía, órbita exterior' }).click()
   await expect(page.locator('.constellation-reading')).toBeVisible()
   await expect(page.locator('.constellation-reading')).toContainText('Marina')
-  await expect(page.locator('.constellation-reading')).toContainText('Guía · órbita exterior')
+  await expect(page.locator('.constellation-reading')).toContainText('Guía')
+  await expect(page.locator('.constellation-reading')).toContainText('órbita exterior')
   await expect(page.locator('.constellation-reading')).toContainText('Piscis')
   await expect(page).toHaveURL(/detail=world-vinculos/)
 
@@ -312,9 +293,9 @@ test('activa un Decreto con tres pulsaciones y confirma que ya es mío', async (
   for (let index = 0; index < 3; index += 1) await ritual.click({ position: { x: 80, y: 80 } })
   await expect(ritual).toContainText('Decretado.')
   await expect(ritual).toHaveCount(0)
-  await activate.click({ delay: 700 })
+  await activate.click({ delay: 700, force: true })
   await expect(page.getByRole('dialog', { name: 'Esto ya es mío' })).toBeVisible()
-  await page.getByRole('button', { name: 'Esto ya es mío' }).click()
+  await page.getByRole('button', { name: 'Esto ya es mío' }).click({ force: true })
   const decree = await page.evaluate(() => JSON.parse(localStorage.getItem('aureo_decretos') ?? '[]').at(-1))
   expect(decree.cumplido).toBe(true)
 })

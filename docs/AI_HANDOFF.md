@@ -164,6 +164,9 @@ No eliminar redirecciones históricas sin una migración y una decisión explíc
 
 - Portada orbital con fecha integrada en el encabezado, número del día, signo, arcano y fase lunar SVG.
 - Umbral incorpora el efecto Light Rays de Vue Bits adaptado a la identidad Noche + Oro mediante `ogl`; solo renderiza mientras está visible y se desactiva con movimiento reducido.
+- En móvil los detalles de cada eje (Vínculos, Decretos, Hobbies, Travesías, Cuidado, Balance, Núcleo y Edad Dorada) se abren como hoja flotante inferior (patrón app) con botón de cierre, en lugar de reemplazar toda la vista; en escritorio conservan la vista completa.
+- En Núcleo, tocar un pensamiento muestra su texto como lectura flotante en la posición de la estrella (sin el texto central "Solo aquí"). En Edad Dorada, el daruma se muestra ampliado y el texto de cada grieta aparece en la posición de la grieta; se quitó la boca del daruma.
+- Mi Balance quedó sin botones duplicados en la portada: el árbol es la entrada y la gestión vive en la tarjeta flotante del detalle. La interfaz móvil se compactó (menos padding, botones y títulos más pequeños) para adaptarse mejor a la pantalla.
 - La luna no tiene un círculo negro exterior innecesario.
 - Las órbitas se mantienen alejadas del centro lunar.
 - El arcano se presenta como un mazo con animación de barajado y alternativa para movimiento reducido.

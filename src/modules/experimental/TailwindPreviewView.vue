@@ -104,6 +104,8 @@ const balancePreviewFlowers = computed(() => [...balanceMovements.value]
   .slice(0, balancePreviewAnchors.length)
   .map((item, index) => ({ item, x: balancePreviewAnchors[index]![0], y: balancePreviewAnchors[index]![1], delay: index * 55 })))
 const today = computed(() => new Intl.DateTimeFormat('es-CL', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date()))
+const balanceCurrency = computed(() => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }))
+const balanceTotal = computed(() => balanceMovements.value.reduce((sum, item) => sum + (item.tipo === 'ingreso' ? item.monto : -item.monto), 0))
 const todayShort = computed(() => new Intl.DateTimeFormat('es-CL', { weekday: 'long', day: 'numeric' }).format(new Date()))
 const greeting = computed(() => {
   const hour = new Date().getHours()
@@ -500,6 +502,13 @@ onMounted(async () => {
                       <span class="balance-sky-ring balance-sky-ring-one" aria-hidden="true" />
                       <span class="balance-sky-ring balance-sky-ring-two" aria-hidden="true" />
                       <span class="balance-sky-ring balance-sky-ring-three" aria-hidden="true" />
+                      <div class="balance-home-reading">
+                        <button type="button" class="balance-home-value" aria-label="Lo que tengo hoy" @click="openDetail('balance')">
+                          <span>Lo que tengo hoy</span>
+                          <strong>{{ balanceCurrency.format(balanceTotal) }}</strong>
+                        </button>
+                        <p>Cada gasto abre una flor. Al tocarla, puedes recordar en qué elegiste usar tus recursos.</p>
+                      </div>
                       <button type="button" class="axis-entry-button balance-tree-entry" :aria-label="`Abrir Mi Balance. ${balancePreviewFlowers.length} ${balancePreviewFlowers.length === 1 ? 'flor de gasto' : 'flores de gastos'}`" @click="openDetail('balance')">
                         <svg class="balance-home-tree" viewBox="0 0 720 560" aria-hidden="true">
                           <defs>
@@ -521,7 +530,6 @@ onMounted(async () => {
                           </g>
                         </svg>
                         <span class="balance-home-scale" aria-hidden="true"><AppIcon name="balance" /></span>
-                        <strong class="privacy-seal-lab">Privado por defecto</strong>
                         <span v-for="flower in balancePreviewFlowers" :key="flower.item.id" class="balance-home-blossom" :style="{ left: `${flower.x}%`, top: `${flower.y}%`, '--flower-delay': `${flower.delay}ms` }" aria-hidden="true"><i v-for="petal in 5" :key="petal" :style="{ '--petal': petal }" /><b /></span>
                         <span v-if="!balancePreviewFlowers.length" class="balance-home-empty">Tu cerezo espera su primera flor.</span>
                         <span v-else class="balance-home-count">{{ balancePreviewFlowers.length }} {{ balancePreviewFlowers.length === 1 ? 'gasto florece' : 'gastos florecen' }} en tu árbol</span>
@@ -754,6 +762,11 @@ onMounted(async () => {
 .balance-sky-ring-two { width:33rem; height:33rem; border-color:color-mix(in srgb,var(--zodiac-color) 32%,transparent); animation-duration:24s; animation-direction:reverse; }
 .balance-sky-ring-three { width:43rem; height:43rem; border-color:rgba(201,168,106,.09); animation-duration:34s; }
 .balance-tree-entry { position:relative; display:block; width:min(100%,40rem); aspect-ratio:720/560; margin-inline:auto; padding:0; overflow:visible; border:0; border-radius:0; background:transparent; color:#f4efe5; cursor:pointer; }
+.balance-home-reading { position:relative; z-index:6; margin-bottom:.75rem; }
+.balance-home-value { display:grid; gap:.35rem; margin-inline:auto; border:0; background:transparent; color:#f4efe5; cursor:pointer; }
+.balance-home-value span { color:#b9b3aa; font:600 .68rem/1 system-ui,sans-serif; text-transform:uppercase; letter-spacing:.1em; }
+.balance-home-value strong { color:#ead6a7; font-size:clamp(2.1rem,7vw,3rem); font-weight:200; font-variant-numeric:tabular-nums; }
+.balance-home-reading p { max-width:40ch; margin:.9rem auto 0; color:#b9b3aa; font-style:italic; line-height:1.55; }
 .balance-tree-entry:focus-visible { outline:2px solid #ead6a7; outline-offset:5px; }
 .balance-home-tree { position:absolute; inset:0; width:100%; height:100%; overflow:visible; transition:filter 220ms ease,transform 420ms cubic-bezier(.16,1,.3,1); }
 .balance-home-pot{fill:#30241f;stroke:#c0987a;stroke-width:2}.balance-home-pot-rim{fill:#563b30;stroke:#d0a185;stroke-width:2}
