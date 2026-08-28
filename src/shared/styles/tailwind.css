@@ -1,0 +1,23 @@
+@layer theme, base, components, utilities;
+
+/* Tailwind vive aislado: sin Preflight y con prefijo para no alterar Áureo actual. */
+@import "tailwindcss/theme.css" layer(theme) theme(inline) prefix(tw);
+@import "tailwindcss/utilities.css" layer(utilities) prefix(tw) important;
+
+@theme inline {
+  --color-noche: #080b11;
+  --color-noche-suave: #10151f;
+  --color-superficie: rgba(18, 24, 35, 0.82);
+  --color-superficie-fuerte: #171d29;
+  --color-oro: #c9a86a;
+  --color-oro-claro: #ead6a7;
+  --color-oro-tenue: rgba(201, 168, 106, 0.12);
+  --color-marfil: #f4efe5;
+  --color-marfil-suave: #b9b3aa;
+  --color-cosmos: #8173b7;
+  --color-salvia: #7da797;
+  --color-ocaso: #b86d5d;
+  --color-linea: rgba(201, 168, 106, 0.2);
+  --font-aureo: "Aureo Serif", Georgia, serif;
+  --ease-aureo: var(--ease-out);
+}

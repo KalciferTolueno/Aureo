@@ -1,0 +1,2 @@
+<script setup lang="ts">import ModuleHeader from './ModuleHeader.vue'; import AppIcon from './AppIcon.vue'; defineProps<{ title: string; symbol: string; summary: string; details: string }>()</script>
+<template><main class="app-shell"><ModuleHeader :title="title" /><section class="placeholder-hero"><AppIcon class="large-symbol respira" :name="symbol" /><h2>{{ summary }}</h2><p class="lead">{{ details }}</p><p class="status-pill">Base preparada · definición funcional pendiente</p></section></main></template>
