@@ -19,7 +19,7 @@ export default defineConfig({
       ],
     },
     workbox: { cleanupOutdatedCaches: true, navigateFallback: 'index.html', globPatterns: ['**/*.{js,css,html,svg,png,ttf}'] },
-    devOptions: { enabled: true },
+    devOptions: { enabled: false },
   })],
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
