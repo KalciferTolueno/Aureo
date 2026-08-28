@@ -6,7 +6,7 @@ last_verified: 2026-08-28
 workspace_root: D:\Work - TIgrr\Aureo
 canonical_codebase: aureo-web
 active_product_surface: tailwind
-active_surface_route: /laboratorio-tailwind
+active_surface_route: /
 supabase_project: msfitymrxblzgiqyjfse
 ---
 
@@ -37,27 +37,21 @@ Si dos fuentes del mismo nivel se contradicen, no adivinar. Presentar la contrad
 
 ## Mapa de versiones y terminología
 
-Áureo tiene una sola base fuente mantenible, dos presentaciones dentro de ella y una referencia histórica externa. No confundirlas.
+Desde la v1.2 Áureo tiene una sola superficie de producto dentro de `aureo-web`: la experiencia Tailwind, servida en la ruta raíz. La presentación primaria no Tailwind fue eliminada.
 
 | Nombre recomendado | Ubicación | URL habitual | Estado | Regla de edición |
 | --- | --- | --- | --- | --- |
 | Base fuente primaria o canónica | `aureo-web/` | No aplica | Única fuente oficial | Todo código productivo vive aquí |
-| Presentación primaria/original, no Tailwind | Rutas regulares de `aureo-web/src/modules/` | `http://127.0.0.1:4174/` | Conservada como referencia interna | No recibe cambios visuales paralelos por defecto |
-| Experiencia Tailwind | `aureo-web/src/modules/experimental/` | `http://127.0.0.1:4175/#/laboratorio-tailwind` | Superficie activa y principal de trabajo | Aplicar aquí los cambios nuevos de interfaz y UX |
+| Experiencia Tailwind | `aureo-web/src/modules/experimental/` | `http://127.0.0.1:4175/#/` | Superficie activa y única de trabajo | Aplicar aquí los cambios de interfaz y UX |
 | Vercel histórico en la web | <https://aureo-comercial.vercel.app/#/> | URL pública | Versión antigua | Solo comparar; nunca asumir que es la fuente vigente |
 | Archivo estático de Vercel | `pagina de vercel/` | `http://127.0.0.1:4180/#/` | Copia descargada el 27-08-2026 | Solo lectura |
 | Recuperación anterior de Vercel | `aureo-comercial-vercel/` | `http://127.0.0.1:4173/#/` | Build público recuperado | Evidencia histórica y compatibilidad |
 
 ### Cómo interpretar “versión primaria”
 
-La expresión puede referirse a dos cosas:
+La expresión se refería antes a dos cosas: la base `aureo-web` y la presentación no Tailwind. Desde la v1.2 la presentación no Tailwind fue eliminada por completo; la única presentación vigente es la experiencia Tailwind.
 
-- **Base primaria**: `aureo-web`, que sí es la fuente oficial.
-- **Presentación primaria/original**: la interfaz no Tailwind servida normalmente en `4174`, que hoy está conservada.
-
-Cuando la usuaria diga “la app”, “la versión actual” o pida un cambio nuevo sin especificar versión, trabajar en la experiencia Tailwind. Si dice “original”, “anterior a Tailwind”, “primaria no Tailwind” o señala el puerto `4174`, trabajar solo en la presentación original solicitada.
-
-La experiencia Tailwind no es otro repositorio ni un prototipo desechable. Comparte tipos, almacenamiento, repositorios y dominio con `aureo-web`.
+Cuando la usuaria pida “la app” o un cambio nuevo, trabajar en la experiencia Tailwind. Las carpetas `pagina de vercel/` y `aureo-comercial-vercel/` son evidencia histórica de solo lectura y no se modifican.
 
 ## Estructura del workspace
 

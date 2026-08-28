@@ -47,6 +47,7 @@ La decisión no afirma que Vue sea universalmente superior a JavaScript nativo. 
 ## Consecuencias
 
 - Toda implementación nueva se realiza en `aureo-web` con Vue y TypeScript.
+- La experiencia Tailwind (`aureo-web/src/modules/experimental/`) es la única superficie de producto; la presentación no Tailwind fue eliminada en la v1.2.
 - Supabase se añadirá detrás de la capa de repositorios actual.
 - El prototipo vanilla no recibe mantenimiento productivo.
 - Una eventual sustitución de Vue requerirá un nuevo ADR, una justificación técnica y un plan explícito de migración y compatibilidad de datos.
