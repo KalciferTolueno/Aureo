@@ -13,6 +13,7 @@ Este registro traduce las correcciones solicitadas sobre la aplicación abierta 
 5. Las auras e iluminaciones de los espacios internos ya no se cortan en la parte superior ni en el borde derecho móvil. El contenedor interno permite que el aura sobresalga y el contenedor exterior de la aplicación sigue controlando el desbordamiento de la página.
 6. El carril de la barra de desplazamiento usa el fondo Noche en la aplicación Tailwind para evitar la franja clara o transparente del borde derecho.
 7. El acceso dejó de pedir correo. La aplicación crea una sesión local persistente por dispositivo y no intenta autenticar ni sincronizar con Supabase durante esta etapa.
+8. El cambio de eje en móvil ya no encoge y vuelve a expandir el escenario: ambas secciones se superponen durante un fundido corto, el encabezado compartido no se vuelve a montar y el retorno al inicio es inmediato.
 
 ## Cambios por archivo
 
@@ -22,6 +23,9 @@ Este registro traduce las correcciones solicitadas sobre la aplicación abierta 
 - Mantiene visible el saludo editorial de Umbral.
 - Elimina el elemento `.balance-home-scale`, sus estilos, sus órbitas decorativas y sus excepciones de movimiento reducido.
 - Conserva el cerezo como entrada principal de Mi Balance y las flores generadas por gastos reales.
+- Sustituye la transición secuencial `out-in` por un reemplazo superpuesto: la sección saliente queda posicionada fuera del flujo durante 120 ms y la entrante determina la geometría desde el primer cuadro.
+- Elimina la clave reactiva del encabezado para que no reinicie su animación en cada eje.
+- Usa scroll instantáneo al cambiar de eje; los detalles conservan su comportamiento independiente.
 
 ### `src/modules/experimental/tailwind/TailwindWorkspace.vue`
 
@@ -86,6 +90,7 @@ Este registro traduce las correcciones solicitadas sobre la aplicación abierta 
 - E2E focalizados del carril raíz del scrollbar: correctos en escritorio y móvil (2/2).
 - Revisión visual en navegador a ancho móvil: Umbral visible sin campo de correo antes y después de recargar; auras sin corte lateral y títulos eliminados según lo solicitado.
 - Detector de diseño aplicado a los componentes modificados: sin hallazgos.
+- Optimización posterior del cambio de eje: `pnpm typecheck`, `pnpm test` (7/7) y `pnpm build` correctos; el E2E de escenario sin colapso pasó en escritorio y móvil. La medición directa de los cinco ejes confirmó que altura inmediata y final coinciden y que el ancho permanece estable.
 
 No declarar que la suite E2E completa fue ejecutada después de estos cambios. Un recorrido E2E integral anterior se interrumpió por una espera inestable en una interacción posterior no relacionada; antes de una entrega externa debe repetirse `pnpm test:e2e` completo.
 
@@ -113,5 +118,6 @@ No declarar que la suite E2E completa fue ejecutada después de estos cambios. U
 - No aplicar `overflow-x: clip` ni una animación con `clip-path` a `.tw-workspace`; el recorte exterior corresponde a `.tailwind-lab`.
 - No hacer transparente el carril del scrollbar mientras la superficie Tailwind esté montada.
 - No reactivar OTP, correo, listeners de reconexión ni sincronización remota sin una nueva decisión explícita.
+- No restaurar `mode="out-in"`, filtros de desenfoque ni máscaras `clip-path` en la transición `axis-ritual`.
 - No borrar `aureo_local_session` junto con los datos personales ni alterar otras claves `aureo_*` al cerrar la sesión local.
 - Núcleo continúa fuera de Supabase, analítica, respaldos remotos e IA en cualquier modo futuro.

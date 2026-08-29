@@ -36,6 +36,16 @@ test('mantiene Mundos en la semántica sin repetir su título en la portada', as
   })).toEqual({ width: 1, height: 1, position: 'absolute' })
 })
 
+test('cambia de eje sin colapsar temporalmente el escenario', async ({ page }) => {
+  await page.goto('/#/?axis=umbral')
+  const stage = page.locator('.ritual-stage-lab')
+  const initialHeight = await stage.evaluate((element) => element.getBoundingClientRect().height)
+  await page.locator('nav:visible').getByRole('button', { name: 'Mundos', exact: true }).click()
+  const switchingHeight = await stage.evaluate((element) => element.getBoundingClientRect().height)
+  expect(switchingHeight).toBeGreaterThan(initialHeight)
+  await expect.poll(() => stage.evaluate((element) => Math.round(element.getBoundingClientRect().height))).toBe(Math.round(switchingHeight))
+})
+
 test('conecta la portada Tailwind con las funciones reales de cada eje', async ({ page }, testInfo) => {
   test.setTimeout(240_000)
   await page.goto('/#/')

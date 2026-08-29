@@ -153,6 +153,7 @@ El inventario exacto de solicitudes, archivos modificados, contratos preservados
 - Los paneles y lecturas flotantes deben permanecer en la misma sección cuando la usuaria lo haya pedido; no introducir navegación innecesaria.
 - El aura compartida de los espacios internos se extiende fuera del encabezado y de la columna de contenido para integrarse con el fondo continuo hasta el borde móvil; ni la animación de entrada ni `.tw-workspace` deben recortarla. El límite exterior permanece en `.tailwind-lab`.
 - El carril del scrollbar raíz usa el mismo fondo Noche (`--cosmos`) para que el borde derecho de la aplicación no revele una franja transparente.
+- El cambio entre ejes reemplaza los escenarios de forma superpuesta y breve: la sección saliente queda fuera del flujo durante 120 ms y la entrante define la altura inmediatamente. No reintroducir `mode="out-in"`, desenfoque o `clip-path` en `axis-ritual`, porque provocaban un colapso intermedio y parpadeo. El encabezado compartido no usa una clave reactiva y el cambio de eje vuelve arriba sin scroll animado.
 
 ## Estado actual de la experiencia Tailwind
 
@@ -346,6 +347,7 @@ Validación posterior a los ajustes documentados del 28-08-2026:
 - `pnpm test`: 3 archivos y 7 pruebas correctas.
 - E2E focalizados de arranque/sesión local, portada Mundos y carril raíz: 2/2 correctos cada uno en escritorio y móvil.
 - E2E focalizados de aura móvil y detalle de Balance: 4/4 correctos en escritorio y móvil.
+- E2E `cambia de eje sin colapsar temporalmente el escenario`: correcto en escritorio y móvil. El runner continuó con la suite amplia y se interrumpió al quedar detenido en un recorrido posterior no relacionado; no declarar una nueva pasada completa.
 - Detector de diseño de los archivos de interfaz modificados: sin hallazgos.
 - La suite E2E completa queda pendiente de repetición; no atribuir los 42 recorridos anteriores al último árbol de trabajo.
 

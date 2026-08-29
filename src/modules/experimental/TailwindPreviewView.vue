@@ -161,8 +161,9 @@ function setAxis(id: AxisId) {
   sessionStorage.setItem('aureo_tailwind_axis', id)
 }
 
-function returnToTop() {
-  requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }))
+function returnToTop(behavior: ScrollBehavior = 'smooth') {
+  const resolvedBehavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : behavior
+  requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: resolvedBehavior }))
 }
 
 function chooseAxis(id: AxisId) {
@@ -172,7 +173,7 @@ function chooseAxis(id: AxisId) {
   detailAction.value = ''
   selectedNucleusThoughtId.value = null
   if (route.name === 'laboratorio-tailwind') void router.replace({ name: 'laboratorio-tailwind', query: { axis: id } })
-  returnToTop()
+  returnToTop('auto')
 }
 
 watch(() => route.query.axis, (queryAxis) => {
@@ -391,7 +392,7 @@ onMounted(async () => {
               <TailwindWorkspace v-if="activeDetail" :detail="activeDetail" :initial-action="detailAction" @close="closeDetail" @changed="refreshCounts" @contemplation="goldenContemplative = $event" />
               <div v-else class="axis-home-lab tw:relative tw:min-w-0">
                 <VueBitsLightRays v-if="selectedId === 'umbral'" class-name="umbral-light-rays" color="#d8b977" :speed="0.38" :spread="0.82" :length="1.65" />
-                <div :key="`heading-${selectedId}`" class="axis-heading-lab tw:flex tw:items-start tw:justify-between tw:gap-5 tw:pb-4" :class="`axis-heading-${selectedId}`">
+                <div class="axis-heading-lab tw:flex tw:items-start tw:justify-between tw:gap-5 tw:pb-4" :class="`axis-heading-${selectedId}`">
                   <div>
                     <h1 v-if="['mundos', 'balance', 'nucleo', 'edad-dorada'].includes(selectedId)" class="tw:sr-only">{{ selected.label }}</h1>
                     <h1 v-else class="tw:mb-2 tw:max-w-none tw:text-balance tw:text-[clamp(2.65rem,7vw,5.6rem)] tw:font-extralight tw:leading-[0.96] tw:tracking-[-0.03em] tw:text-marfil">{{ selectedId === 'umbral' ? greeting : selected.label }}<span v-if="selectedId === 'umbral' && profile.name">, {{ profile.name }}</span></h1>
@@ -406,7 +407,7 @@ onMounted(async () => {
                 </div>
 
                 <div class="ritual-stage-lab tw:relative tw:min-h-[16rem] tw:overflow-visible tw:sm:min-h-[25rem]">
-                  <Transition name="axis-ritual" mode="out-in">
+                  <Transition name="axis-ritual">
                   <section v-if="selectedId === 'umbral'" key="umbral" class="tw:grid tw:min-h-[20rem] tw:place-items-center tw:p-6 tw:text-center tw:sm:min-h-[25rem]" aria-label="Umbral">
                     <div class="lab-celestial" aria-hidden="true">
                       <svg class="lab-constellation lab-constellation-one" viewBox="0 0 180 120" fill="none"><path d="M12 94 48 58 82 72 126 24 166 48"/><circle cx="12" cy="94" r="2.4"/><circle cx="48" cy="58" r="3"/><circle cx="82" cy="72" r="2.2"/><circle cx="126" cy="24" r="3.2"/><circle cx="166" cy="48" r="2.4"/></svg>
@@ -750,9 +751,10 @@ onMounted(async () => {
 .axis-sigil-lab { border-color:color-mix(in srgb,var(--zodiac-color) 42%,#c9a86a) !important; background:color-mix(in srgb,var(--zodiac-color) 7%,transparent); box-shadow:0 14px 34px rgba(0,0,0,.2),inset 0 0 0 1px rgba(201,168,106,.06); }
 .ritual-stage-lab { isolation: isolate; }
 @keyframes axis-heading-in { from { opacity: .65; transform: translateY(6px); } }
-.axis-ritual-enter-active, .axis-ritual-leave-active { transition: opacity 280ms cubic-bezier(.23,1,.32,1), filter 340ms cubic-bezier(.23,1,.32,1), clip-path 420ms cubic-bezier(.23,1,.32,1); }
-.axis-ritual-enter-from { opacity: .45; filter: blur(7px); clip-path: inset(0 8% 0 8%); }
-.axis-ritual-leave-to { opacity: 0; filter: blur(3px); clip-path: inset(0 0 100% 0); }
+.axis-ritual-enter-active { transition: opacity 160ms cubic-bezier(.23,1,.32,1); }
+.ritual-stage-lab > .axis-ritual-leave-active { position:absolute; z-index:2; inset:0 0 auto; width:100%; pointer-events:none; transition:opacity 120ms ease-out; }
+.axis-ritual-enter-from { opacity: .55; }
+.axis-ritual-leave-to { opacity: 0; }
 
 .balance-stage-lab { position: relative; }
 .balance-field-lab { isolation:isolate; min-height:26rem; perspective:700px; transform-style:preserve-3d; }

@@ -165,6 +165,7 @@ Evolucionar Áureo desde esta implementación con un sistema de interfaz consist
 - Edad Dorada: esfera de resina cálida con vetas doradas.
 - Fondo estelar continuo y jerarquía editorial.
 - Las auras de los espacios internos se funden con ese fondo y no quedan recortadas por la animación de entrada.
+- Los cambios entre ejes no usan espera `out-in`: la sección entrante ocupa el escenario de inmediato y la saliente se desvanece superpuesta durante 120 ms. El encabezado se reutiliza y la navegación entre ejes vuelve arriba sin desplazamiento suave, evitando el colapso temporal y el parpadeo percibido en móvil.
 - Adaptación móvil sin desbordamiento horizontal.
 - Movimiento desactivable mediante preferencias de movimiento reducido.
 
@@ -327,6 +328,8 @@ Antes de reactivar el modo multiusuario conviene repetir un smoke test remoto co
 Validación histórica anterior a la última iteración: typecheck y build correctos; 7 pruebas unitarias y 42 recorridos E2E aprobados en escritorio y móvil; detector de diseño sin hallazgos.
 
 Validación del árbol de trabajo posterior a los ajustes visuales y al acceso local del 28 de agosto de 2026: build correcto; 3 archivos y 7 pruebas unitarias correctas; E2E focalizados de sesión local, portada Mundos y scrollbar correctos 2/2 cada uno; E2E focalizados de aura móvil y Balance correctos 4/4; detector de diseño sin hallazgos. La suite E2E completa todavía debe repetirse y los 42 recorridos históricos no describen el estado exacto de este árbol.
+
+Revalidación de estabilidad al cambiar de eje: `pnpm typecheck`, `pnpm test` (7/7) y `pnpm build` correctos; el nuevo E2E de escenario estable pasó en escritorio y móvil. La ejecución amplia iniciada por el runner se interrumpió al quedar detenida en un recorrido posterior no relacionado, por lo que la suite completa continúa pendiente. La medición directa confirmó que la altura del escenario, el ancho de la aplicación y la altura documental son iguales en el primer cuadro y al terminar el fundido en los cinco ejes.
 
 - `docs/product/DECISIONES_CLIENTA.md`: decisiones vinculantes de producto.
 - `PRODUCT.md`: contexto durable de diseño.
