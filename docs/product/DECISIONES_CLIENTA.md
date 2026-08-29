@@ -88,6 +88,7 @@ Esta es la referencia rápida para desarrolladores y asistentes de IA. Resume de
 - Las coordenadas son persistentes.
 - La eliminación usa un diálogo interno, nunca `window.confirm()`.
 - Travesías se representa sobre un mapa y conserva coordenadas reales junto con el recuerdo opcional “¿Qué viviste ahí?”.
+- Por decisión del 29-08-2026, el mapa estático de Travesías se reemplaza por un mapa Leaflet interactivo: permite buscar cualquier lugar mediante OpenStreetMap o tocar el mapa. Las consultas de búsqueda son explícitas, no se muestran coordenadas ni mensajes redundantes, y los registros continúan guardándose mediante el repositorio existente.
 
 ## Eje 3 — Mi Balance
 

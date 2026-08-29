@@ -348,7 +348,8 @@ onMounted(async () => {
 
 <template>
   <main class="tailwind-lab tw:min-h-svh tw:bg-noche tw:font-aureo tw:text-marfil tw:selection:bg-oro/30" :style="zodiacStyle" :data-zodiac="zodiacKey">
-    <div class="tw:mx-auto tw:grid tw:min-h-svh tw:max-w-[1600px] tw:lg:grid-cols-[17rem_minmax(0,1fr)]">
+    <VueBitsLightRays v-if="selectedId === 'umbral' && !activeDetail" class-name="umbral-light-rays" color="#d8b977" :speed="0.38" :spread="1.8" :length="2.2" :pointer-influence=".012" :fps="24" :dpr="1.25" />
+    <div class="aureo-app-frame tw:grid tw:min-h-svh tw:w-full tw:lg:grid-cols-[17rem_minmax(0,1fr)]">
       <aside v-if="!goldenContemplative" class="tw:hidden tw:border-r tw:border-oro/15 tw:bg-noche/95 tw:px-5 tw:py-8 tw:lg:sticky tw:lg:top-0 tw:lg:flex tw:lg:h-svh tw:lg:flex-col">
         <div class="tw:flex tw:items-center tw:gap-3 tw:px-2">
           <span class="aureo-lab-mark" aria-hidden="true"><span /></span>
@@ -386,16 +387,15 @@ onMounted(async () => {
       </aside>
 
       <div class="tw:min-w-0 tw:pb-[calc(6.5rem+env(safe-area-inset-bottom))] tw:lg:pb-0">
-        <div class="tw:px-5 tw:py-5 tw:sm:px-8 tw:sm:py-10 tw:lg:px-12 tw:lg:py-12">
-          <div class="tw:mx-auto tw:max-w-5xl">
+        <div class="aureo-content-shell tw:px-5 tw:py-5 tw:sm:px-8 tw:sm:py-10 tw:lg:py-12">
+          <div class="aureo-content-width tw:mx-auto tw:w-full">
             <section aria-live="polite">
               <TailwindWorkspace v-if="activeDetail" :detail="activeDetail" :initial-action="detailAction" @close="closeDetail" @changed="refreshCounts" @contemplation="goldenContemplative = $event" />
               <div v-else class="axis-home-lab tw:relative tw:min-w-0">
-                <VueBitsLightRays v-if="selectedId === 'umbral'" class-name="umbral-light-rays" color="#d8b977" :speed="0.38" :spread="0.82" :length="1.65" />
                 <div class="axis-heading-lab tw:flex tw:items-start tw:justify-between tw:gap-5 tw:pb-4" :class="`axis-heading-${selectedId}`">
                   <div>
                     <h1 v-if="['mundos', 'balance', 'nucleo', 'edad-dorada'].includes(selectedId)" class="tw:sr-only">{{ selected.label }}</h1>
-                    <h1 v-else class="tw:mb-2 tw:max-w-none tw:text-balance tw:text-[clamp(2.65rem,7vw,5.6rem)] tw:font-extralight tw:leading-[0.96] tw:tracking-[-0.03em] tw:text-marfil">{{ selectedId === 'umbral' ? greeting : selected.label }}<span v-if="selectedId === 'umbral' && profile.name">, {{ profile.name }}</span></h1>
+                    <h1 v-else class="axis-welcome-title tw:mb-2 tw:max-w-none tw:text-balance tw:font-extralight tw:leading-[0.96] tw:tracking-[-0.03em] tw:text-marfil">{{ selectedId === 'umbral' ? greeting : selected.label }}<span v-if="selectedId === 'umbral' && profile.name">, {{ profile.name }}</span></h1>
                     <p class="tw:mb-0 tw:max-w-[48ch] tw:text-pretty tw:text-base tw:italic tw:leading-relaxed tw:text-marfil-suave tw:sm:text-lg">{{ selectedId === 'umbral' ? 'El día en números' : selected.phrase }}</p>
                   </div>
                   <div class="axis-heading-meta">
@@ -743,13 +743,15 @@ onMounted(async () => {
 .mobile-axis-active .mobile-axis-icon { border-color:color-mix(in srgb,var(--zodiac-color) 58%,#c9a86a); background:color-mix(in srgb,var(--zodiac-color) 10%,transparent); }
 
 .axis-heading-lab { position: relative; animation: axis-heading-in 420ms cubic-bezier(.23,1,.32,1) both; }
+.axis-welcome-title { font-size:clamp(2.65rem,7vw,5.6rem); }
 .axis-heading-lab::after { content: ''; position: absolute; left: 0; bottom: 0; width: 4.5rem; height: 1px; background:linear-gradient(90deg,#c9a86a 0 42%,var(--zodiac-color) 68%,transparent); }
 .axis-heading-lab>div:first-child { min-width: 0; }
 .axis-heading-meta { display: grid; flex: 0 0 auto; justify-items: end; gap: 1rem; text-align: right; }
 .axis-heading-meta time { color: #b9b3aa; font: 500 .68rem/1.35 system-ui,sans-serif; white-space: nowrap; }
 .axis-date-short { display: none; }
 .axis-sigil-lab { border-color:color-mix(in srgb,var(--zodiac-color) 42%,#c9a86a) !important; background:color-mix(in srgb,var(--zodiac-color) 7%,transparent); box-shadow:0 14px 34px rgba(0,0,0,.2),inset 0 0 0 1px rgba(201,168,106,.06); }
-.ritual-stage-lab { isolation: isolate; }
+.ritual-stage-lab { display:grid; isolation: isolate; min-height:clamp(26rem,56svh,44rem); }
+.ritual-stage-lab > section { min-height:0 !important; }
 @keyframes axis-heading-in { from { opacity: .65; transform: translateY(6px); } }
 .axis-ritual-enter-active { transition: opacity 160ms cubic-bezier(.23,1,.32,1); }
 .ritual-stage-lab > .axis-ritual-leave-active { position:absolute; z-index:2; inset:0 0 auto; width:100%; pointer-events:none; transition:opacity 120ms ease-out; }
@@ -1040,4 +1042,18 @@ onMounted(async () => {
   .axis-ritual-enter-active, .axis-ritual-leave-active { transition-duration: 1ms; }
   .nucleus-preview-card-enter-active,.nucleus-preview-card-leave-active,.nucleus-preview-card-enter-active .nucleus-preview-reading,.nucleus-preview-card-leave-active .nucleus-preview-reading { transition-duration:1ms; }
 }
+
+/* v1.3 — capas espaciales de Vue Bits y superficies menos administrativas. */
+.umbral-light-rays{position:fixed!important;z-index:1!important;inset:0!important;width:100vw!important;height:100svh!important;pointer-events:none;opacity:.34}.aureo-app-frame{position:relative;z-index:2;width:100%;max-width:none}.aureo-content-shell{padding-inline:clamp(1.25rem,4vw,5rem)}.aureo-content-width{max-width:none}.tailwind-lab::after{content:'';position:fixed;z-index:0;inset:0;pointer-events:none;background:radial-gradient(ellipse 68% 42% at 50% 42%,transparent 38%,rgba(3,5,9,.32) 100%);mix-blend-mode:multiply}
+.tailwind-lab>.aureo-app-frame>aside{position:relative;border-right-color:rgba(201,168,106,.13)!important;background:linear-gradient(128deg,rgba(12,17,27,.94),rgba(8,11,17,.76))!important;backdrop-filter:blur(18px)}.tailwind-lab>.aureo-app-frame>aside::after{content:'';position:absolute;right:-1px;top:7%;bottom:7%;width:1px;background:linear-gradient(transparent,var(--zodiac-color),transparent);opacity:.52}.desktop-axis-nav{gap:.55rem!important}.desktop-axis-nav button{min-height:3.25rem!important;border-radius:999px!important;padding-inline:1rem!important;transition:background-color 220ms ease,color 220ms ease,transform 220ms cubic-bezier(.16,1,.3,1)!important}.desktop-axis-nav button:hover{background:color-mix(in srgb,var(--zodiac-color) 8%,transparent)!important;transform:translateX(.2rem)}.desktop-axis-active{background:linear-gradient(90deg,color-mix(in srgb,var(--zodiac-color) 15%,transparent),rgba(201,168,106,.06),transparent)!important}.desktop-axis-nav button::before{left:.35rem!important;height:1.55rem!important}.desktop-axis-active .desktop-axis-icon{box-shadow:0 0 0 4px color-mix(in srgb,var(--zodiac-color) 8%,transparent),0 10px 24px rgba(0,0,0,.2)}
+.axis-home-lab{display:grid;grid-template-rows:auto minmax(0,1fr) auto;min-height:calc(100svh - 6rem);padding:clamp(.25rem,1.2vw,1rem);border-radius:2rem 1rem 3.5rem 1.5rem/1.6rem 1.1rem 2.5rem 1.4rem}.axis-heading-lab{padding:clamp(.6rem,1.2vw,1rem) clamp(.4rem,1vw,.8rem) 1.25rem}.axis-heading-lab::after{width:min(42vw,8.5rem);background:linear-gradient(90deg,transparent,#c9a86a 26%,var(--zodiac-color) 60%,transparent)}.axis-heading-meta{padding:.55rem .65rem;border:1px solid rgba(201,168,106,.15);border-radius:45% 55% 52% 48%/48% 46% 54% 52%;background:rgba(8,11,17,.24);backdrop-filter:blur(10px)}
+.umbral-datum{border-radius:47% 53% 46% 54%/52% 44% 56% 48%;background:linear-gradient(135deg,rgba(17,24,36,.84),rgba(8,11,17,.72));backdrop-filter:blur(14px)}.umbral-datum-number{padding-inline:1rem}.umbral-datum-sign{border-radius:56% 44% 53% 47%/44% 55% 45% 56%}.umbral-datum-arcana{border-radius:45% 55% 52% 48%/58% 46% 54% 42%}.tarot-card{border-radius:8px 8px 14px 8px}.umbral-threshold-notes>button{border-radius:1.5rem 1rem 1.5rem .9rem!important;background:linear-gradient(125deg,rgba(22,28,40,.56),rgba(8,11,17,.2))!important;backdrop-filter:blur(11px)}
+.worlds-stage-lab::before{width:min(91vw,35rem);border-color:color-mix(in srgb,var(--zodiac-color) 28%,rgba(201,168,106,.1));box-shadow:0 0 70px color-mix(in srgb,var(--zodiac-color) 8%,transparent)}.world-flower-lab{filter:drop-shadow(0 22px 34px rgba(0,0,0,.3))}.lab-world-petal{cursor:pointer}.lab-world-petal:hover .lab-petal-surface,.lab-world-petal:focus .lab-petal-surface{filter:brightness(1.16) saturate(1.08)}
+.balance-stage-lab>div:last-of-type{margin:1.25rem auto 0;width:min(100%,39rem);padding:.35rem;border:1px solid rgba(201,168,106,.16);border-radius:2rem 1.1rem 2rem 1.1rem/1.2rem 2rem 1.1rem 2rem;background:rgba(11,16,24,.42);backdrop-filter:blur(14px)}.balance-stage-lab>div:last-of-type>button{border-radius:999px!important;border-color:rgba(201,168,106,.28)!important;background:transparent!important}.balance-stage-lab>div:last-of-type>button:first-child{background:linear-gradient(90deg,rgba(201,168,106,.2),rgba(201,168,106,.06))!important}.balance-home-reading{padding:.7rem 1rem;border-radius:50% 50% 42% 58%/55% 45% 55% 45%;background:rgba(8,11,17,.18);backdrop-filter:blur(6px)}.balance-home-value strong{text-shadow:0 12px 30px rgba(0,0,0,.42)}
+.nucleus-home-gate{border:1px solid rgba(129,115,183,.26);border-radius:46% 54% 48% 52%/42% 56% 44% 58%;box-shadow:0 28px 70px rgba(0,0,0,.24);background:radial-gradient(circle at 46% 20%,rgba(129,115,183,.18),transparent 47%),rgba(9,13,21,.52);backdrop-filter:blur(15px)}.nucleus-home-notes button{border-radius:50%!important;background:rgba(13,18,29,.72)!important}.nucleus-capture-lab{padding:1.25rem 1.3rem 1.1rem;border:1px solid rgba(129,115,183,.22);border-radius:1.8rem 1.25rem 2.7rem 1.1rem/1.4rem 2.4rem 1.35rem 2.1rem;background:rgba(9,13,21,.46);backdrop-filter:blur(14px)}.nucleus-capture-lab textarea{border-radius:1.15rem 1.15rem 1.9rem 1.15rem}.nucleus-capture-lab button{border-radius:999px}
+.golden-daruma-practice{padding:clamp(.9rem,2vw,1.45rem);border:1px solid color-mix(in srgb,var(--sign-color) 22%,rgba(201,168,106,.18));border-radius:1.8rem 1.1rem 2.8rem 1.25rem/1.3rem 2.25rem 1.6rem 2.2rem;background:linear-gradient(135deg,color-mix(in srgb,var(--sign-color) 7%,rgba(8,11,17,.5)),rgba(8,11,17,.22));backdrop-filter:blur(15px)}.golden-daruma-capture>button{border-radius:999px}.golden-daruma-contemplate{border-radius:999px;padding:.55rem .9rem;border:1px solid rgba(201,168,106,.28);background:rgba(8,11,17,.28)}
+.lab-mobile-nav{border-radius:2rem 2rem 1.3rem 1.3rem!important;background:linear-gradient(135deg,rgba(14,20,31,.95),rgba(8,11,17,.88))!important;box-shadow:0 -14px 42px rgba(0,0,0,.28),inset 0 1px rgba(234,214,167,.08)}.lab-mobile-nav button{border-radius:999px!important}.mobile-axis-active{background:color-mix(in srgb,var(--zodiac-color) 11%,transparent)!important}
+@media(max-width:760px){.umbral-light-rays{opacity:.25}.ritual-stage-lab{min-height:clamp(18rem,50svh,30rem)}.axis-home-lab{min-height:calc(100svh - 9rem);padding:.15rem 0 .7rem;border-radius:1.5rem 1rem 2.6rem 1rem}.axis-heading-meta{padding:.35rem .45rem}.balance-stage-lab>div:last-of-type{border-radius:1.55rem 1rem 1.55rem 1rem}.nucleus-home-gate{border-radius:2rem 1.45rem 2.7rem 1.25rem}.nucleus-capture-lab,.golden-daruma-practice{border-radius:1.4rem 1rem 2.1rem 1rem}.umbral-datum{transform:scale(.92)}}
+@media(min-width:1024px){.aureo-content-width{max-width:72rem}.axis-home-lab{padding:.75rem}.axis-heading-lab{padding:.5rem .5rem 1rem}.axis-welcome-title{font-size:clamp(3.4rem,4.25vw,4.25rem)}.ritual-stage-lab{min-height:clamp(24rem,50svh,36rem)}.world-flower-lab{width:min(70vw,22rem)}.worlds-stage-lab::before{width:min(78vw,31rem)}.balance-field-lab{min-height:27rem}.balance-tree-entry{width:min(100%,34rem)}.nucleus-cloth-lab{max-width:25rem!important}.golden-daruma-home{width:min(100%,42rem);grid-template-columns:minmax(14rem,17rem) minmax(16rem,1fr);gap:2.25rem}}
+@media(prefers-reduced-motion:reduce){.desktop-axis-nav button:hover{transform:none}.lab-world-petal:hover .lab-petal-surface{filter:none}}
 </style>

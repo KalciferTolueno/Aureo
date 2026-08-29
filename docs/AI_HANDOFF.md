@@ -2,7 +2,7 @@
 document: aureo-ai-handoff
 status: canonical
 audience: coding-agents-and-maintainers
-last_verified: 2026-08-28
+last_verified: 2026-08-29
 workspace_root: D:\Work - TIgrr\Aureo
 canonical_codebase: aureo-web
 active_product_surface: tailwind
@@ -157,6 +157,21 @@ El inventario exacto de solicitudes, archivos modificados, contratos preservados
 
 ## Estado actual de la experiencia Tailwind
 
+### Renovación visual v1.3
+
+- La experiencia conserva su identidad Noche + Oro, pero reemplaza el aspecto de paneles administrativos rígidos por una gramática de superficies orgánicas, halos y cápsulas de acción. Navegación, entradas, formularios, lecturas y estados vacíos comparten esta misma dirección en los cinco ejes.
+- Aurora, Particles y Spotlight Card fueron retirados por decisión explícita de la usuaria porque su estética no se integraba con Áureo. No reintroducir componentes de React Bits o Vue Bits por defecto.
+- `TailwindPreviewView.vue` y `TailwindWorkspace.vue` conservan raíces semánticas nativas, el fondo Noche + Oro y las animaciones propias de cada eje. `VueBitsLightRays` permanece únicamente en Umbral como efecto histórico ya integrado.
+- Los escenarios de portada ocupan la altura disponible del viewport en escritorio y móvil. Las animaciones restantes respetan `prefers-reduced-motion`; las interacciones y el foco visible no dependen del movimiento.
+
+Validación de la renovación v1.3 (29-08-2026): `pnpm typecheck`, `pnpm test` (3 archivos, 7 pruebas) y `pnpm build` correctos; detector de diseño sin hallazgos; revisión manual de escritorio y móvil aprobada. Los cuatro recorridos E2E focalizados de espacios y detalle de Balance pasan en escritorio y móvil. La pasada completa anterior cerró en 32/40 antes de corregir el recorte de los espacios; aún se debe repetir completa antes de una entrega externa para confirmar los cuatro escenarios restantes (dos esperan una acción ausente en el detalle de Balance y dos dependen del cierre temporizado de diálogos móviles).
+
+Validación del ajuste de viewport y movimiento (29-08-2026): `pnpm typecheck`, `pnpm test`, `pnpm build` y el E2E focalizado de cambio de eje correctos en escritorio y móvil. La revisión visual confirmó el escenario a altura completa y las animaciones desactivadas con `prefers-reduced-motion`.
+
+Validación tras retirar Aurora, Particles y Spotlight (29-08-2026): `pnpm typecheck`, `pnpm test` (7 pruebas), `pnpm build` y 6 recorridos E2E de arranque, semántica de Mundos y cambio de eje correctos en escritorio y móvil. La app vuelve a cargar en `4175` sin los canvases ni halos externos.
+
+La densidad de escritorio se compactó sin alterar móvil: desde `1024px` el contenido útil se limita a `72rem`, los títulos editoriales y los objetos-signatura usan máximos menores, y los detalles reducen separación y escala conservando controles táctiles y el fondo a viewport completo. A `1920px`, el saludo queda en `68px` y el contenido en `1152px`; a `390px` conserva `42.4px`, sin desbordamiento horizontal. Validación del 29-08-2026: revisión visual a `1440x900`, `1920x1080` y `390x844`, consola sin errores, `pnpm typecheck`, `pnpm test` (7 pruebas), `pnpm build` y 6 recorridos E2E focalizados correctos en escritorio y móvil. El detector solo conserva avisos advisory preexistentes sobre colores y radios fuera de `DESIGN.md`.
+
 ### Umbral
 
 - Portada orbital con fecha integrada en el encabezado, número del día, signo, arcano y fase lunar SVG.
@@ -184,7 +199,7 @@ Submundos destacados:
 - Mi Constelación entra directamente al mapa orbital; no presenta una frase explicativa entre el encabezado y las órbitas.
 - **Lo que cuido**: mural editorial de afiches fotográficos. Permite elegir o arrastrar imágenes, limita archivos a 12 MB y optimiza localmente a JPEG con lado máximo de 1400 px.
 - Registros históricos de Compañeros y Plantas sin imagen siguen visibles como afiches tipográficos.
-- Travesías usa un mapa SVG local, guarda latitud/longitud y admite el recuerdo opcional “¿Qué viviste ahí?”.
+- Travesías usa un mapa Leaflet cargado solo al abrir ese detalle. El lugar y sus coordenadas se eligen siempre juntos mediante búsqueda explícita por Nominatim/OpenStreetMap o tocando el mapa con geocodificación inversa; no hay un campo “Lugar” independiente que permita separar el nombre de la posición. La interfaz no muestra latitud/longitud ni mensajes redundantes de ubicación elegida. Los mapas y la búsqueda necesitan red, pero los registros y coordenadas siguen en el repositorio local y no cambian sus claves.
 - Decretos usa un ritual de tres pulsaciones por activación; la séptima crea voluntariamente un nodo sin texto en Edad Dorada.
 - Hobbies permite pausar y retomar actividades y vuelve a hacer visible el jardín dormido sin notificaciones.
 - En desarrollo se muestran cinco imágenes de prueba desde `src/assets/care-demo/`; están marcadas como `Muestra`, no se guardan ni sincronizan y no forman parte del build productivo.

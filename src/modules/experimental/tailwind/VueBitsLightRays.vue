@@ -5,7 +5,7 @@
 <script setup lang="ts">
 // Adapted from Vue Bits Light Rays: https://vue-bits.dev/backgrounds/light-rays
 import { Mesh, Program, Renderer, Triangle } from 'ogl'
-import { onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 
 const props = withDefaults(defineProps<{
   className?: string
@@ -13,12 +13,20 @@ const props = withDefaults(defineProps<{
   speed?: number
   spread?: number
   length?: number
+  pointerInfluence?: number
+  fps?: number
+  dpr?: number
+  paused?: boolean
 }>(), {
   className: '',
   color: '#c9a86a',
   speed: 0.45,
   spread: 0.85,
   length: 1.8,
+  pointerInfluence: 0.06,
+  fps: 30,
+  dpr: 1.25,
+  paused: false,
 })
 
 const container = ref<HTMLDivElement | null>(null)
@@ -28,6 +36,7 @@ let visible = false
 let intersectionObserver: IntersectionObserver | undefined
 let resizeObserver: ResizeObserver | undefined
 let removePointerListener: (() => void) | undefined
+let lastRender = -Infinity
 
 const vertex = `
 attribute vec2 position;
@@ -46,6 +55,7 @@ uniform vec3 raysColor;
 uniform float raysSpeed;
 uniform float lightSpread;
 uniform float rayLength;
+uniform float pointerInfluence;
 uniform vec2 mousePos;
 varying vec2 vUv;
 
@@ -70,7 +80,7 @@ float rayStrength(vec2 raySource, vec2 rayRefDirection, vec2 coord,
 void main() {
   vec2 coord = vec2(gl_FragCoord.x, iResolution.y - gl_FragCoord.y);
   vec2 mouseDirection = normalize(mousePos * iResolution.xy - rayPos);
-  vec2 finalRayDir = normalize(mix(rayDir, mouseDirection, 0.06));
+  vec2 finalRayDir = normalize(mix(rayDir, mouseDirection, pointerInfluence));
   vec4 rays1 = vec4(1.0) * rayStrength(rayPos, finalRayDir, coord, 36.2214, 21.11349, 1.5 * raysSpeed);
   vec4 rays2 = vec4(1.0) * rayStrength(rayPos, finalRayDir, coord, 22.3991, 18.0234, 1.1 * raysSpeed);
   vec4 color = rays1 * 0.5 + rays2 * 0.4;
@@ -90,7 +100,7 @@ function rgb(hex: string): [number, number, number] {
 onMounted(() => {
   if (!container.value || matchMedia('(prefers-reduced-motion: reduce)').matches) return
 
-  renderer = new Renderer({ dpr: Math.min(devicePixelRatio || 1, 2), alpha: true, antialias: false })
+  renderer = new Renderer({ dpr: Math.min(devicePixelRatio || 1, props.dpr), alpha: true, antialias: false })
   const gl = renderer.gl
   gl.canvas.style.width = '100%'
   gl.canvas.style.height = '100%'
@@ -105,6 +115,7 @@ onMounted(() => {
     raysSpeed: { value: props.speed },
     lightSpread: { value: props.spread },
     rayLength: { value: props.length },
+    pointerInfluence: { value: props.pointerInfluence },
     mousePos: { value: [0.5, 0.5] },
   }
   const mesh = new Mesh(gl, { geometry: new Triangle(gl), program: new Program(gl, { vertex, fragment, uniforms }) })
@@ -116,10 +127,17 @@ onMounted(() => {
     uniforms.rayPos.value = [gl.canvas.width * 0.5, -gl.canvas.height * 0.2]
   }
   const render = (time: number) => {
-    if (!renderer || !visible) return
-    uniforms.iTime.value = time * 0.001
-    renderer.render({ scene: mesh })
+    if (!renderer || !visible || props.paused) return
+    if (time - lastRender >= 1000 / props.fps) {
+      uniforms.iTime.value = time * 0.001
+      renderer.render({ scene: mesh })
+      lastRender = time
+    }
     frame = requestAnimationFrame(render)
+  }
+  const scheduleRender = () => {
+    cancelAnimationFrame(frame)
+    if (visible && !props.paused) frame = requestAnimationFrame(render)
   }
   const pointer = (event: PointerEvent) => {
     if (!container.value) return
@@ -132,13 +150,13 @@ onMounted(() => {
   intersectionObserver = new IntersectionObserver(([entry]) => {
     if (!entry) return
     visible = entry.isIntersecting
-    cancelAnimationFrame(frame)
-    if (visible) frame = requestAnimationFrame(render)
+    scheduleRender()
   }, { threshold: 0.1 })
   intersectionObserver.observe(container.value)
   window.addEventListener('pointermove', pointer, { passive: true })
   removePointerListener = () => window.removeEventListener('pointermove', pointer)
   resize()
+  watch(() => props.paused, scheduleRender)
 })
 
 onUnmounted(() => {

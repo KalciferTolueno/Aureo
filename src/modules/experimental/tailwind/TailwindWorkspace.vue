@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useCollection } from '@/composables/useCollection'
 import { storage } from '@/data/storage'
 import { useProfileStore } from '@/stores/profile'
@@ -23,6 +23,7 @@ import type {
 
 const props = defineProps<{ detail: string; initialAction?: string }>()
 const emit = defineEmits<{ close: []; changed: []; contemplation: [active: boolean] }>()
+const JourneyMap = defineAsyncComponent(() => import('./JourneyMap.vue'))
 const profile = useProfileStore()
 
 const intentions = useCollection<Intention>('intenciones')
@@ -58,6 +59,8 @@ const worldForm = reactive({ nombre: '', categoria: 'Amistad', signo: '', texto:
 const worldSaving = ref(false)
 const careImageError = ref('')
 const careImageLoading = ref(false)
+const journeyLocationSelected = ref(false)
+const journeyLocationMessage = ref('')
 const selectedConstellationLink = ref<string | null>(null)
 const constellationMap = ref<HTMLElement | null>(null)
 const constellationActive = ref(false)
@@ -123,6 +126,8 @@ function worldSecondary(item: WorldDisplayItem) {
 function resetWorldForm() {
   Object.assign(worldForm, { nombre: '', categoria: props.detail === 'world-decretos' ? 'ser' : 'Amistad', signo: '', texto: '', sensacion: '', estado: 'decretado', nota: '', momento: '', lat: 0, lng: 0, tipo: 'compañero', detalle: '', imagen: '' })
   careImageError.value = ''
+  journeyLocationSelected.value = false
+  journeyLocationMessage.value = ''
 }
 function loadCareImage(file: File) {
   return new Promise<HTMLImageElement>((resolve, reject) => {
@@ -176,7 +181,10 @@ async function addWorldItem() {
     }
     else if (props.detail === 'world-decretos' && worldForm.texto.trim()) await decrees.add({ texto: worldForm.texto.trim(), categoria: worldForm.categoria as Decree['categoria'], activaciones: 0, cumplido: false, fecha_cumplimiento: null, fecha_creacion: created })
     else if (props.detail === 'world-hobbies' && worldForm.nombre.trim() && worldForm.sensacion.trim()) await hobbies.add({ nombre: worldForm.nombre.trim(), sensacion: worldForm.sensacion.trim(), estado: 'activo', sesiones: 0, flow_ultimo: 1, fecha_creacion: created })
-    else if (props.detail === 'world-travesias' && worldForm.nombre.trim()) await journeys.add({ nombre: worldForm.nombre.trim(), estado: worldForm.estado as Journey['estado'], nota: worldForm.nota.trim(), momento: worldForm.momento.trim(), lat: Math.max(-90, Math.min(90, worldForm.lat)), lng: Math.max(-180, Math.min(180, worldForm.lng)), fecha_creacion: created })
+    else if (props.detail === 'world-travesias' && worldForm.nombre.trim()) {
+      if (!journeyLocationSelected.value) { journeyLocationMessage.value = 'Busca un lugar, toca el mapa o escribe sus coordenadas.'; return }
+      await journeys.add({ nombre: worldForm.nombre.trim(), estado: worldForm.estado as Journey['estado'], nota: worldForm.nota.trim(), momento: worldForm.momento.trim(), lat: Math.max(-90, Math.min(90, worldForm.lat)), lng: Math.max(-180, Math.min(180, worldForm.lng)), fecha_creacion: created })
+    }
     else if (props.detail === 'world-cuidado' && worldForm.nombre.trim()) {
       if (!worldForm.imagen) { careImageError.value = 'Añade una imagen para formar el afiche.'; return }
       if (worldForm.tipo === 'planta') await plants.add({ nombre: worldForm.nombre.trim(), tipo: worldForm.detalle.trim(), nota: worldForm.nota.trim(), imagen: worldForm.imagen, fecha_creacion: created })
@@ -231,9 +239,70 @@ async function toggleHobby(item: WorldDisplayItem) {
   emit('changed')
 }
 const dormantHobbies = computed(() => hobbies.items.value.filter((item) => item.estado === 'pausa' || (item.ultima_vez && Date.now() - new Date(item.ultima_vez).getTime() > 30 * 86_400_000)))
-const journeyPoints = computed(() => journeys.items.value.map((item) => ({ item, x: ((item.lng + 180) / 360) * 100, y: ((90 - item.lat) / 180) * 100 })))
-function useCurrentLocation() {
-  navigator.geolocation?.getCurrentPosition(({ coords }) => { worldForm.lat = Number(coords.latitude.toFixed(5)); worldForm.lng = Number(coords.longitude.toFixed(5)) })
+const journeyDraft = computed(() => journeyLocationSelected.value ? { lat: worldForm.lat, lng: worldForm.lng } : null)
+function selectJourneyLocation(location: { lat: number; lng: number; name?: string; label?: string }) {
+  worldForm.lat = Number(location.lat.toFixed(5))
+  worldForm.lng = Number(location.lng.toFixed(5))
+  worldForm.nombre = location.name ?? location.label ?? `${worldForm.lat}, ${worldForm.lng}`
+  journeyLocationSelected.value = true
+  journeyLocationMessage.value = ''
+}
+const journeyQuery = ref('')
+const journeyResults = ref<{ display_name: string; lat: string; lon: string; name?: string; addresstype?: string }[]>([])
+const journeySearching = ref(false)
+let journeySearchController: AbortController | undefined
+async function journeySearch() {
+  const query = journeyQuery.value.trim()
+  if (query.length < 2) { journeyLocationMessage.value = 'Escribe al menos dos caracteres.'; return }
+  journeySearchController?.abort()
+  journeySearchController = new AbortController()
+  journeySearching.value = true
+  journeyResults.value = []
+  journeyLocationMessage.value = ''
+  try {
+    const params = new URLSearchParams({ q: query, format: 'jsonv2', limit: '5', addressdetails: '1', 'accept-language': 'es' })
+    const response = await fetch(`https://nominatim.openstreetmap.org/search?${params}`, { signal: journeySearchController.signal })
+    if (!response.ok) throw new Error('No se pudo consultar el mapa.')
+    const results = await response.json() as typeof journeyResults.value
+    const localityRank = ['city', 'town', 'municipality', 'village', 'hamlet']
+    const rank = (result: { addresstype?: string }) => { const index = localityRank.indexOf(result.addresstype ?? ''); return index < 0 ? localityRank.length : index }
+    journeyResults.value = results.sort((a, b) => rank(a) - rank(b))
+    if (!journeyResults.value.length) journeyLocationMessage.value = 'No encontramos ese lugar. Prueba con ciudad y país.'
+  } catch (error) {
+    if ((error as Error).name !== 'AbortError') journeyLocationMessage.value = 'La búsqueda necesita conexión. También puedes tocar el mapa.'
+  } finally { journeySearching.value = false }
+}
+function chooseJourneyResult(result: { display_name: string; lat: string; lon: string; name?: string }) {
+  const lat = Number(result.lat)
+  const lng = Number(result.lon)
+  const name = result.name || result.display_name.split(',')[0]?.trim()
+  selectJourneyLocation(name ? { lat, lng, name, label: result.display_name } : { lat, lng, label: result.display_name })
+  journeyResults.value = []
+  journeyQuery.value = result.display_name
+}
+async function reverseJourneyCoordinates(lat: number, lng: number, fallbackName?: string) {
+  journeySearchController?.abort()
+  journeySearchController = new AbortController()
+  journeyResults.value = []
+  journeyLocationMessage.value = 'Reconociendo el lugar…'
+  try {
+    const params = new URLSearchParams({ lat: String(lat), lon: String(lng), format: 'jsonv2', zoom: '14', addressdetails: '1', 'accept-language': 'es' })
+    const response = await fetch(`https://nominatim.openstreetmap.org/reverse?${params}`, { signal: journeySearchController.signal })
+    if (!response.ok) throw new Error('No se pudo reconocer el lugar.')
+    const result = await response.json() as { display_name: string; name?: string; lat: string; lon: string }
+    const name = result.name || result.display_name.split(',')[0]?.trim() || fallbackName || 'Ubicación elegida'
+    journeyQuery.value = result.display_name
+    selectJourneyLocation({ lat, lng, name, label: result.display_name })
+  } catch (error) {
+    if ((error as Error).name === 'AbortError') return
+    const coordinates = `${lat.toFixed(5)}, ${lng.toFixed(5)}`
+    journeyQuery.value = fallbackName || coordinates
+    journeyLocationMessage.value = 'Sin conexión para reconocer el nombre. Guardaremos las coordenadas exactas.'
+    selectJourneyLocation({ lat, lng, name: fallbackName ?? coordinates, label: fallbackName ?? coordinates })
+  }
+}
+function journeyPick(coords: { lat: number; lng: number }) {
+  void reverseJourneyCoordinates(coords.lat, coords.lng)
 }
 
 const balanceMode = ref<'overview' | 'movement' | 'goal'>('overview')
@@ -448,28 +517,22 @@ onBeforeUnmount(() => { clearTimeout(decreeHoldTimer); plasmaObserver?.disconnec
           <li><span class="legend-oro" aria-hidden="true" /><strong>Amistad, Raíz y Guía</strong><small>Exterior · {{ constellationOrbitCounts[2] }}</small></li>
         </ul>
       </section>
-      <section v-if="detail === 'world-travesias'" class="journey-map" aria-label="Mapa de Travesías">
-        <svg viewBox="0 0 1000 500" role="img" aria-label="Mapa del mundo con tus lugares">
-          <path d="M72 149 118 102l73-12 48 31 39-13 48 30 17 54-37 19-17 47-52 17-29 72-42-13-8-69-53-28Zm291-55 52-31 92 14 47 38 72 8 63 49-25 51-55 3-34 43-46-8-22-50-59-9-38-43Zm196 190 45-25 67 22 19 54-31 91-57 8-39-44Zm163-137 53-34 84 5 69 44-15 43-74 4-32 39-71-17-34-44Zm98 168 51-17 58 34-9 54-67 21-47-41Z" />
-        </svg>
-        <button v-for="point in journeyPoints" :key="point.item.id" type="button" class="journey-point" :style="{ left: `${point.x}%`, top: `${point.y}%` }" :aria-label="`${point.item.nombre}, ${point.item.estado === 'visitado' ? 'lugar vivido' : 'lugar que llamas'}`"><span /><strong>{{ point.item.nombre }}</strong></button>
-        <p v-if="!journeyPoints.length">Cada lugar que conoces lleva algo tuyo para siempre.</p>
-      </section>
+      <JourneyMap v-if="detail === 'world-travesias'" :journeys="journeys.items.value" :draft="journeyDraft" @pick="journeyPick" />
       <form class="ritual-form" @submit.prevent="addWorldItem">
         <template v-if="detail === 'world-decretos'">
           <label>Dimensión<select v-model="worldForm.categoria"><option value="ser">Ser</option><option value="vivir">Vivir</option><option value="tener">Tener</option></select></label>
           <label>Tu decreto<textarea v-model="worldForm.texto" required maxlength="500" placeholder="Soy…" /></label>
         </template>
         <template v-else>
-          <label>{{ detail === 'world-vinculos' ? '¿Cómo se llama?' : detail === 'world-hobbies' ? '¿Qué es?' : detail === 'world-travesias' ? 'Lugar' : 'Nombre' }}<input v-model="worldForm.nombre" required maxlength="120" /></label>
+          <label v-if="detail !== 'world-travesias'">{{ detail === 'world-vinculos' ? '¿Cómo se llama?' : detail === 'world-hobbies' ? '¿Qué es?' : 'Nombre' }}<input v-model="worldForm.nombre" required maxlength="120" /></label>
           <label v-if="detail === 'world-vinculos'">Vínculo<select v-model="worldForm.categoria"><option v-for="value in ['Amor','Familia','Amistad','Raíz','Guía']" :key="value">{{ value }}</option></select></label>
           <label v-if="detail === 'world-vinculos'">¿Cuál es su signo?<select v-model="worldForm.signo"><option value="">Prefiero no indicarlo</option><option v-for="sign in zodiacSigns" :key="sign">{{ sign }}</option></select></label>
           <label v-if="detail === 'world-hobbies'">¿Cómo te hace sentir?<textarea v-model="worldForm.sensacion" required maxlength="400" /></label>
           <label v-if="detail === 'world-travesias'">Estado<select v-model="worldForm.estado"><option value="decretado">Quiero ir</option><option value="visitado">Ya estuve</option></select></label>
-          <template v-if="detail === 'world-travesias'"><div class="journey-coordinates"><label>Latitud<input v-model.number="worldForm.lat" type="number" min="-90" max="90" step="0.00001" required /></label><label>Longitud<input v-model.number="worldForm.lng" type="number" min="-180" max="180" step="0.00001" required /></label></div><button class="workspace-text" type="button" @click="useCurrentLocation">Usar mi ubicación actual</button><label>¿Qué viviste ahí?<textarea v-model="worldForm.momento" maxlength="500" placeholder="Una línea. Lo primero que recuerdes." /></label></template>
+          <template v-if="detail === 'world-travesias'"><div class="journey-picker"><label for="journey-place-search">Buscar cualquier lugar</label><div><input id="journey-place-search" v-model="journeyQuery" type="search" autocomplete="off" placeholder="Ciudad, país o lugar" /><button type="button" :disabled="journeySearching" @click="journeySearch">{{ journeySearching ? 'Buscando…' : 'Buscar' }}</button></div><ul v-if="journeyResults.length" class="journey-results" aria-label="Lugares encontrados"><li v-for="result in journeyResults" :key="`${result.lat}-${result.lon}`"><button type="button" @click="chooseJourneyResult(result)">{{ result.display_name }}</button></li></ul><div class="journey-selected-place" :class="{ empty: !journeyLocationSelected }"><small>Lugar elegido</small><strong>{{ journeyLocationSelected ? worldForm.nombre : 'Busca un lugar o selecciónalo en el mapa.' }}</strong></div><p v-if="journeyLocationMessage" class="journey-location-message" role="status">{{ journeyLocationMessage }}</p><label>¿Qué viviste ahí?<textarea v-model="worldForm.momento" maxlength="500" placeholder="Una línea. Lo primero que recuerdes." /></label></div></template>
           <label v-if="detail !== 'world-hobbies'">Una nota, si la necesitas<textarea v-model="worldForm.nota" maxlength="500" /></label>
         </template>
-        <button class="workspace-primary" type="submit" :disabled="worldSaving">{{ worldSaving ? 'Guardando…' : detail === 'world-vinculos' ? 'Encender en mi constelación' : detail === 'world-decretos' ? 'Lo decreto' : 'Agregar' }}</button>
+        <button class="workspace-primary" type="submit" :disabled="worldSaving || (detail === 'world-travesias' && !journeyLocationSelected)">{{ worldSaving ? 'Guardando…' : detail === 'world-vinculos' ? 'Encender en mi constelación' : detail === 'world-decretos' ? 'Lo decreto' : 'Agregar' }}</button>
       </form>
       <section v-if="detail !== 'world-vinculos'" class="workspace-records" :aria-label="`Registros de ${title}`">
         <article v-for="item in [...worldItems].reverse()" :key="String(item.id)" class="workspace-record">
@@ -799,11 +862,15 @@ onBeforeUnmount(() => { clearTimeout(decreeHoldTimer); plasmaObserver?.disconnec
 @keyframes nucleus-plasma-current{0%{border-radius:46% 54% 63% 37%/55% 43% 57% 45%;filter:blur(20px) brightness(.86);transform:translate(-53%,-48%) scale(.86)}50%{border-radius:61% 39% 42% 58%/43% 62% 38% 57%;filter:blur(15px) brightness(1.08);transform:translate(-46%,-54%) scale(1.12)}100%{border-radius:39% 61% 54% 46%/64% 38% 62% 36%;filter:blur(18px) brightness(.96);transform:translate(-50%,-47%) scale(.96)}}
 @keyframes thought-plasma-pulse{0%,100%{opacity:.64;transform:scale(.78)}50%{opacity:1;transform:scale(1.18)}}
 @media(max-width:760px){.detail-nucleo .nucleus-emotion-field{min-height:min(25rem,66svh)}.plasma-pool{width:46%}.nucleus-emotion-key{gap:.55rem 1rem}.thought-reading-layer{align-items:end;padding:1rem 1rem calc(6rem + env(safe-area-inset-bottom))}.detail-nucleo .thought-reading{width:100%}}
-.journey-map{position:relative;grid-column:1/-1;isolation:isolate;aspect-ratio:2/1;min-height:16rem;overflow:hidden;border-block:1px solid rgba(125,167,151,.28);background:radial-gradient(circle at 50% 45%,rgba(125,167,151,.1),transparent 62%),#090e15}.journey-map>svg{position:absolute;inset:7% 4%;width:92%;height:86%}.journey-map>svg path{fill:rgba(125,167,151,.12);stroke:rgba(191,220,207,.35);stroke-width:1.4}.journey-point{position:absolute;z-index:2;display:grid;width:44px;height:44px;place-items:center;padding:0;border:0;background:transparent;color:#f4efe5;transform:translate(-50%,-50%);cursor:pointer}.journey-point span{width:9px;aspect-ratio:1;border:1px solid #e3f0e8;border-radius:50%;background:#7da797;box-shadow:0 5px 16px rgba(125,167,151,.6)}.journey-point strong{position:absolute;top:34px;width:max-content;max-width:8rem;overflow:hidden;font-size:.68rem;font-weight:500;text-overflow:ellipsis;white-space:nowrap}.journey-map>p{position:absolute;left:50%;bottom:1.5rem;width:min(90%,32rem);margin:0;color:#b6c9c0;font-style:italic;text-align:center;transform:translateX(-50%)}.journey-coordinates{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+.journey-picker{display:grid;gap:.6rem}.journey-picker label{color:#b9b3aa;font:600 .72rem/1.3 system-ui,sans-serif;text-transform:uppercase;letter-spacing:.06em}.journey-picker>div{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.6rem}.journey-picker>div input{min-width:0;min-height:48px;border:0;border-bottom:1px solid rgba(125,167,151,.42);outline:0;background:transparent;color:#f4efe5;padding:.65rem .15rem;font:1rem/1.4 Georgia,'Times New Roman',serif}.journey-picker>div input:focus-visible{border-bottom-color:#ead6a7;box-shadow:0 2px #ead6a7}.journey-picker>div button{min-height:44px;border:1px solid rgba(201,168,106,.42);border-radius:999px;background:rgba(201,168,106,.1);color:#ead6a7;padding:.65rem 1rem;font:600 .78rem/1 system-ui,sans-serif;cursor:pointer}.journey-picker>div button:disabled{cursor:wait;opacity:.55}.journey-results{display:grid;max-height:14rem;margin:0;padding:.3rem;overflow:auto;border:1px solid rgba(125,167,151,.32);border-radius:1rem;background:#0d121b;list-style:none}.journey-results button{width:100%;min-height:44px;border:0;border-bottom:1px solid rgba(125,167,151,.14);background:transparent;color:#e3f0e8;padding:.6rem .7rem;text-align:left;cursor:pointer}.journey-results button:is(:hover,:focus-visible){outline:0;background:rgba(125,167,151,.12);color:#f4efe5}.journey-selected-place{display:grid;gap:.35rem;padding:.85rem 0;border-block:1px solid rgba(125,167,151,.2)}.journey-selected-place small{color:#b9c9c1;font:600 .68rem/1.3 system-ui,sans-serif;text-transform:uppercase;letter-spacing:.08em}.journey-selected-place strong{color:#e3f0e8;font-size:1.15rem;font-weight:300}.journey-selected-place.empty strong{color:#a9b9b2;font-size:1rem;font-style:italic}.journey-location-message{margin:0;color:#b9c9c1;font:.76rem/1.45 system-ui,sans-serif}
 .decree-ritual{position:fixed;z-index:120;inset:0;display:grid;place-content:center;justify-items:center;gap:2rem;padding:2rem;background:#080b11;color:#f4efe5;text-align:center;cursor:pointer}.decree-ritual>button{position:absolute;right:1rem;top:1rem;display:grid;width:48px;height:48px;place-items:center;border:0;background:transparent;color:#d8d1c6}.decree-ritual>button svg{width:1rem}.decree-ritual blockquote{max-width:38rem;margin:0;font-size:clamp(1.7rem,5vw,3rem);font-weight:250;line-height:1.25}.decree-ritual>div{display:flex;gap:1rem}.decree-ritual>div span{width:1rem;aspect-ratio:1;border:1px solid rgba(201,168,106,.42);border-radius:50%}.decree-ritual>div span.filled{background:#c9a86a;box-shadow:0 0 18px rgba(201,168,106,.48)}.decree-ritual p{margin:0;color:#c9a86a;font-style:italic}
 .decree-claim{position:fixed;z-index:121;inset:0;display:grid;place-content:center;justify-items:center;gap:1.2rem;padding:2rem;background:rgba(8,11,17,.96);color:#f4efe5;text-align:center}.decree-claim p{margin:0;color:#b9b3aa}.decree-claim strong{max-width:34rem;color:#ead6a7;font-size:clamp(1.4rem,4vw,2.2rem);font-weight:300}.decree-claim>div{display:flex;gap:.75rem}.decree-claim button{min-height:48px;border:1px solid rgba(201,168,106,.35);border-radius:12px;background:transparent;color:#d8d1c6;padding:.75rem 1rem}.decree-claim button:last-child{background:rgba(201,168,106,.14);color:#ead6a7}
 .balance-base-income{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:1rem;width:min(100%,34rem);margin:1.25rem auto 0}.balance-base-income label{display:grid;gap:.45rem;color:#b9b3aa;font:600 .72rem/1.3 system-ui,sans-serif}.balance-base-income input,.daruma-progress input{min-height:46px;box-sizing:border-box;border:1px solid rgba(201,168,106,.28);border-radius:10px;background:#0d121b;color:#f4efe5;padding:.65rem .75rem}.balance-recurring{display:flex!important;grid-template-columns:auto 1fr!important;align-items:center;min-height:44px}.balance-recurring input{width:22px!important;min-height:22px!important}.daruma-progress{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.45rem;margin-top:.6rem}.daruma-progress button,.daruma-transfer{display:inline-flex;min-height:44px;align-items:center;justify-content:center;gap:.35rem;border:1px solid rgba(201,168,106,.38);border-radius:10px;background:rgba(201,168,106,.1);color:#ead6a7;padding:.55rem .75rem;cursor:pointer}.daruma-transfer{margin-top:.6rem}.daruma-transfer svg{width:1rem}
-@media(max-width:560px){.journey-map{aspect-ratio:1.45/1}.journey-coordinates,.balance-base-income{grid-template-columns:1fr}.decree-ritual{padding:1.5rem}.balance-base-income .workspace-primary{width:100%}}
+@media(max-width:560px){.balance-base-income{grid-template-columns:1fr}.decree-ritual{padding:1.5rem}.balance-base-income .workspace-primary{width:100%}}
 @media(max-width:760px){.workspace-primary{min-height:44px;padding:.6rem .9rem}.ritual-form,.nucleus-entry,.golden-entry{padding:.95rem;gap:.85rem}.ritual-form{padding:.95rem}.workspace-text,.workspace-back{min-height:40px}.daruma-progress button,.daruma-transfer,.segmented-choice button{padding:.5rem .7rem}}
 @media(prefers-reduced-motion:reduce){.tw-workspace{animation:workspace-appear 160ms ease-out both}.workspace-aura,.workspace-sigil::before,.ritual-form::before,.thought-cloth,.thought-cloth>button span,.plasma-pool,.golden-sculpture,.golden-sculpture>.resin-rift,.golden-sculpture>button span,.umbral-workspace::before{animation:none}.workspace-record,.intention-row{animation:none}.thought-float-enter-active,.thought-float-leave-active,.thought-float-enter-active .thought-reading,.thought-float-leave-active .thought-reading{transition-duration:1ms}.tw-workspace *{scroll-behavior:auto!important;transition-duration:120ms!important}}@keyframes workspace-appear{from{opacity:.72}to{opacity:1}}
+/* v1.3 — los detalles son lecturas en un campo, no tarjetas administrativas. */
+.tw-workspace{padding:clamp(.2rem,1.2vw,1rem);border-radius:2.1rem 1.1rem 3.25rem 1.3rem/1.4rem 2.55rem 1.65rem 2.8rem}.workspace-header{padding:.75rem .55rem 1.5rem}.workspace-back{border-radius:999px;padding:.65rem .9rem;background:rgba(8,11,17,.28)}.workspace-title{padding:.2rem .45rem}.workspace-sigil{background:radial-gradient(circle at 35% 30%,color-mix(in srgb,var(--workspace-accent) 18%,transparent),rgba(8,11,17,.2));backdrop-filter:blur(8px)}.ritual-form{padding:clamp(1.05rem,2.5vw,1.55rem);border:1px solid color-mix(in srgb,var(--workspace-accent) 28%,transparent);border-radius:1.65rem 1rem 2.75rem 1.2rem/1.25rem 2.25rem 1.55rem 2.45rem;background:linear-gradient(135deg,color-mix(in srgb,var(--workspace-accent) 8%,rgba(10,15,23,.72)),rgba(8,11,17,.34));backdrop-filter:blur(13px);clip-path:none;box-shadow:0 20px 48px rgba(0,0,0,.15)}.ritual-form::before{display:none}.ritual-form :is(input,select,textarea){border-radius:1rem 1rem 1.55rem 1rem;background:rgba(7,11,17,.58)}.workspace-primary{border-radius:999px;clip-path:none;box-shadow:0 12px 28px rgba(0,0,0,.2)}.workspace-primary::after{display:none}.workspace-primary:hover{transform:translateY(-1px);box-shadow:0 16px 36px color-mix(in srgb,var(--workspace-accent) 15%,rgba(0,0,0,.22))}.workspace-record{padding:.95rem .55rem .95rem 1.5rem;border-bottom-color:color-mix(in srgb,var(--workspace-accent) 17%,transparent)}.workspace-record>button,.daruma-progress button,.daruma-transfer{border-radius:999px}.workspace-empty{padding:1rem 1.1rem;border:1px dashed color-mix(in srgb,var(--workspace-accent) 28%,transparent);border-radius:1.5rem 1rem 1.8rem 1.1rem;background:color-mix(in srgb,var(--workspace-accent) 4%,transparent)}.balance-base-income{padding:1.15rem 1.2rem;border:1px solid rgba(201,168,106,.2);border-radius:1.6rem 1.05rem 2.3rem 1.2rem;background:rgba(10,15,23,.42);backdrop-filter:blur(12px)}.thought-reading{border:1px solid color-mix(in srgb,var(--thought-color) 36%,transparent);border-radius:1.6rem 1rem 2.6rem 1.1rem/1.2rem 2.25rem 1.55rem 2.1rem;background:radial-gradient(circle at 12% 8%,color-mix(in srgb,var(--thought-color) 12%,transparent),transparent 44%),rgba(13,18,27,.94);backdrop-filter:blur(14px)}.nucleus-entry,.golden-entry{padding:1.25rem 1.35rem;border:1px solid color-mix(in srgb,var(--workspace-accent) 24%,transparent);border-radius:1.65rem 1rem 2.55rem 1.15rem;background:rgba(9,13,21,.4);backdrop-filter:blur(13px)}.nucleus-entry textarea,.golden-entry textarea{border-radius:1.05rem 1.05rem 1.7rem 1.05rem}.nucleus-gate{padding:1.75rem;border:1px solid rgba(129,115,183,.25);border-radius:2rem 1.25rem 2.7rem 1.1rem;background:rgba(10,14,23,.48);backdrop-filter:blur(14px)}.note-grid button{border-radius:50%}.contemplation-exit{border-radius:999px}
+@media(max-width:760px){.tw-workspace{padding:0;border-radius:1.65rem 1rem 2.4rem 1rem}.workspace-header{padding:.4rem .15rem 1.1rem}.ritual-form,.nucleus-entry,.golden-entry{border-radius:1.35rem 1rem 2rem 1rem}.balance-base-income{border-radius:1.35rem 1rem 2rem 1rem}.workspace-primary{width:auto}.workspace-record>button{border-radius:999px}.nucleus-gate{border-radius:1.65rem 1.15rem 2.25rem 1rem}}
+@media(min-width:1024px){.tw-workspace{padding:.5rem}.workspace-header{margin-bottom:1.75rem;padding:.5rem .25rem 1.25rem}.workspace-header h1{font-size:clamp(3rem,3.75vw,3.75rem)}.workspace-title{grid-template-columns:minmax(0,1fr) 3.75rem;gap:1.25rem;padding:.15rem .25rem}.workspace-sigil{width:3.5rem}.workspace-sigil svg{width:1.4rem}.workspace-grid,.balance-lists,.umbral-workspace{gap:1.5rem}.detail-world-vinculos .constellation-workspace{gap:2.25rem}.constellation-map{width:min(100%,34rem)}.ritual-form{padding:1.25rem}}
 </style>

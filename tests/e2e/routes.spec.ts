@@ -44,6 +44,7 @@ test('cambia de eje sin colapsar temporalmente el escenario', async ({ page }) =
   const switchingHeight = await stage.evaluate((element) => element.getBoundingClientRect().height)
   expect(switchingHeight).toBeGreaterThan(initialHeight)
   await expect.poll(() => stage.evaluate((element) => Math.round(element.getBoundingClientRect().height))).toBe(Math.round(switchingHeight))
+  await expect.poll(() => stage.getByRole('region', { name: 'Mundos' }).evaluate((element) => Math.round(element.getBoundingClientRect().height))).toBe(Math.round(switchingHeight))
 })
 
 test('conecta la portada Tailwind con las funciones reales de cada eje', async ({ page }, testInfo) => {
@@ -335,12 +336,30 @@ test('activa un Decreto con tres pulsaciones y confirma que ya es mío', async (
 })
 
 test('ubica Travesías en el mapa y transfiere un Daruma completo sin datos financieros', async ({ page }) => {
+  test.setTimeout(60_000)
+  await page.route('https://nominatim.openstreetmap.org/search?**', (route) => route.fulfill({
+    contentType: 'application/json',
+    body: JSON.stringify([
+      { display_name: 'Valparaíso, Antioquia, Colombia', name: 'Valparaíso', addresstype: 'village', lat: '5.615', lon: '-75.624' },
+      { display_name: 'Valparaíso, Región de Valparaíso, Chile', name: 'Valparaíso', addresstype: 'city', lat: '-33.0472', lon: '-71.6127' },
+    ]),
+  }))
   await page.goto('/#/?axis=mundos&detail=world-travesias')
-  await page.getByRole('textbox', { name: 'Lugar', exact: true }).fill('Valparaíso')
-  await page.getByLabel('Latitud').fill('-33.0472')
-  await page.getByLabel('Longitud').fill('-71.6127')
+  await expect(page.locator('.leaflet-container')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Usar mi ubicación actual' })).toHaveCount(0)
+  await expect(page.getByText('La búsqueda consulta OpenStreetMap. También puedes tocar cualquier punto del mapa.', { exact: true })).toHaveCount(0)
+  await page.getByRole('searchbox', { name: 'Buscar cualquier lugar' }).fill('Valparaíso')
+  await page.getByRole('button', { name: 'Buscar', exact: true }).click()
+  const results = page.getByRole('list', { name: 'Lugares encontrados' }).getByRole('button')
+  await expect(results.first()).toHaveText(/Valparaíso, Región/)
+  await results.first().click()
+  await expect(page.getByRole('textbox', { name: 'Lugar', exact: true })).toHaveCount(0)
+  await expect(page.getByText('Valparaíso', { exact: true })).toBeVisible()
+  await expect(page.getByText('-33.0472, -71.6127', { exact: true })).toHaveCount(0)
+  await expect(page.getByText(/^Ubicación elegida:/)).toHaveCount(0)
   await page.getByLabel('¿Qué viviste ahí?').fill('El viento junto al mar')
-  await page.getByRole('button', { name: 'Agregar' }).click()
+  await page.getByRole('button', { name: 'Agregar' }).focus()
+  await page.keyboard.press('Enter')
   await expect(page.getByRole('button', { name: /Valparaíso, lugar que llamas/ })).toBeVisible()
 
   await page.goto('/#/?axis=balance&detail=balance&action=meta')
