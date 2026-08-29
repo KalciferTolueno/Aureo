@@ -30,7 +30,7 @@ La experiencia se usa principalmente como web o PWA personal, en sesiones breves
 - Las rutas y claves `aureo_*` recuperadas deben permanecer compatibles.
 - El almacenamiento está abstraído para permitir una futura migración a IndexedDB o sincronización en línea.
 - La aplicación debe preservar datos existentes mediante migraciones versionadas.
-- Umbral, Mundos, Mi Balance y Edad Dorada sincronizarán mediante Supabase y cuentas por correo; Núcleo permanecerá exclusivamente en el dispositivo.
+- En la etapa vigente el acceso es local y persistente por dispositivo, sin correo ni llamadas de sincronización. La arquitectura de Supabase se conserva para una futura activación multiusuario; Núcleo permanecerá siempre exclusivamente en el dispositivo.
 - La inteligencia artificial queda fuera de la Fase 1. La arquitectura de datos puede admitir funciones futuras de reflejo de patrones, pero no se implementa un chatbot ni componentes de IA en esta validación.
 - Los cinco ejes están disponibles sin distinción Free/Premium durante esta etapa.
 - Ninguna pantalla se conecta directamente a Supabase: autenticación y persistencia remota se incorporan detrás de la interfaz de repositorios.

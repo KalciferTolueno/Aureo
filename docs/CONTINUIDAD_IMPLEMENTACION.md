@@ -1,6 +1,8 @@
 # Continuidad de implementación — Áureo
 
-Última actualización: 20 de agosto de 2026.
+Última actualización: 28 de agosto de 2026.
+
+> Nota de continuidad: para el inventario exacto de los cambios visuales y de acceso más recientes, leer `docs/changes/2026-08-28-ajustes-ui-y-acceso-local.md`. Ese registro, `docs/AI_HANDOFF.md` y `docs/product/DECISIONES_CLIENTA.md` prevalecen sobre las descripciones históricas de este documento.
 
 Este documento permite retomar el trabajo sin depender del historial de conversación. Resume el estado comprobado del repositorio, las decisiones visuales tomadas, la integración de Supabase, el laboratorio Tailwind y la forma segura de continuar.
 
@@ -26,27 +28,24 @@ Las instrucciones para abrir la copia se encuentran en `D:\Work - TIgrr\Aureo\pa
 - La aplicación funciona como PWA, con caché offline y aviso de actualización.
 - Los datos locales siguen detrás de repositorios y migraciones versionadas.
 - Las rutas históricas continúan siendo compatibles; `finanzas` redirige a Mi Balance y `conocimiento` a Edad Dorada.
-- Umbral, Mundos, Mi Balance y Edad Dorada tienen soporte de sincronización remota.
+- Umbral, Mundos, Mi Balance y Edad Dorada conservan soporte de sincronización remota, actualmente pausado por el modo de acceso local.
 - Núcleo permanece exclusivamente en `localStorage`/`sessionStorage` del dispositivo.
 
 ## Dirección de trabajo vigente
 
 Decisión confirmada el 27 de agosto de 2026: todos los cambios nuevos de interfaz, UX y funciones visibles se realizarán sobre la versión Tailwind de `4175`.
 
-La presentación original de `4174` se conserva intacta como referencia comparativa y respaldo histórico. No se deben implementar allí cambios equivalentes por defecto ni mantener ambas interfaces en paralelo, salvo que la usuaria lo solicite expresamente.
+La presentación no Tailwind fue eliminada en la v1.2. No mantener una segunda interfaz en paralelo; las copias de Vercel permanecen como referencias históricas de solo lectura.
 
 ## Servidores de desarrollo separados
 
-La experiencia principal Tailwind y la presentación original conservada usan orígenes distintos:
+La experiencia principal usa el siguiente origen:
 
 | Interfaz | Comando | URL |
 | --- | --- | --- |
-| Presentación original de referencia | `pnpm dev` | `http://127.0.0.1:4174/` |
-| Experiencia principal Tailwind | `pnpm dev:tailwind` | `http://127.0.0.1:4175/#/laboratorio-tailwind` |
+| Experiencia principal Tailwind | `pnpm dev:tailwind` | `http://127.0.0.1:4175/#/` |
 
-El puerto distinto separa `localStorage`, sesiones y service workers. No asumir que los datos creados en `4174` aparecerán en `4175`.
-
-El origen `4175` puede abrir la experiencia Tailwind y sus espacios funcionales internos sin repetir onboarding. La interfaz vigente en `4174` conserva su protección normal.
+Las copias históricas ejecutadas en otros puertos tienen `localStorage` y service workers independientes. El origen `4175` abre la experiencia vigente y sus espacios funcionales.
 
 El laboratorio ya no presenta controles para “salir del modo”, “volver a Áureo actual” ni “abrir el eje actual”. Debe sentirse como una interfaz independiente, no como una capa superpuesta.
 
@@ -76,7 +75,9 @@ Fuente de verdad local del esquema:
 
 ### Autenticación y sincronización
 
-- El acceso por correo usa OTP de Supabase en `src/stores/auth.ts`.
+- Decisión del 28 de agosto de 2026: el acceso vigente crea y reutiliza `aureo_local_session` mediante `src/stores/auth.ts`; no solicita correo.
+- `src/App.vue` no inicializa autenticación de Supabase ni dispara sincronización remota durante esta etapa local.
+- El OTP por correo y la sincronización multiusuario quedan aplazados; sus servicios se conservan desacoplados para reactivarlos más adelante.
 - El perfil se sincroniza mediante `src/data/supabase/profile.ts`.
 - Las pantallas no llaman directamente a Supabase.
 - `src/data/sync/service.ts` empuja mutaciones pendientes, invoca el RPC y vuelve a mezclar los registros remotos en el almacenamiento local.
@@ -102,15 +103,18 @@ La base remota también rechaza `axis = 'nucleo'`. Esta defensa doble —cliente
 
 ### Mundos
 
+- La portada no repite el título grande del eje; conserva `Mundos` en la navegación y como encabezado semántico oculto.
 - Se consolidó una flor SVG de cinco pétalos como acceso principal.
 - Los pétalos usan volumen, brillo y color propios.
 - Los textos siguen la dirección radial desde el centro hacia afuera.
 - Correspondencia visual preservada: Mi Constelación, Decretos, Hobbies, Travesías y Lo que cuido.
 - Mi Constelación Tailwind recupera los tres anillos confirmados por la clienta: Amor en el centro, Familia en la órbita media y Amistad, Raíz y Guía en la exterior. Cada vínculo se representa como una estrella interactiva sin abandonar la vista.
+- La vista entra directamente al mapa de Mi Constelación, sin texto explicativo previo a las órbitas.
 - Se mantuvo la frase “Todo lo que ya es tuyo.”
 
 ### Núcleo
 
+- La portada no repite el título grande del eje; conserva `Núcleo` en la navegación y como encabezado semántico oculto.
 - La metáfora visual es una tela o espacio circular oscuro e íntimo.
 - Los pensamientos aparecen como puntos de luz locales.
 - Se añadió movimiento sutil de respiración, respetando `prefers-reduced-motion`.
@@ -121,6 +125,7 @@ La base remota también rechaza `axis = 'nucleo'`. Esta defensa doble —cliente
 
 ### Edad Dorada
 
+- La portada no repite el título grande del eje; conserva `Edad Dorada` en la navegación y como encabezado semántico oculto.
 - Se reforzó la metáfora aprobada de Resina de Oro / Kintsugi Invertido.
 - La pieza central Tailwind es un Daruma de resina, con el color zodiacal como capa visual. Cada declaración conservada forma una grieta dorada accesible; la más reciente nace en el centro y las anteriores se desplazan hacia afuera.
 - Pulsar o enfocar una grieta revela lo que representa sin abandonar la composición. El modo contemplación oculta toda la navegación y deja únicamente el Daruma en la noche.
@@ -159,12 +164,13 @@ Evolucionar Áureo desde esta implementación con un sistema de interfaz consist
 - Núcleo: tela circular con luces locales.
 - Edad Dorada: esfera de resina cálida con vetas doradas.
 - Fondo estelar continuo y jerarquía editorial.
+- Las auras de los espacios internos se funden con ese fondo y no quedan recortadas por la animación de entrada.
 - Adaptación móvil sin desbordamiento horizontal.
 - Movimiento desactivable mediante preferencias de movimiento reducido.
 
 ### Funciones y seguridad de datos del laboratorio
 
-La experiencia Tailwind es funcional e independiente. Sus acciones permanecen en la ruta `laboratorio-tailwind` y abren espacios internos con el mismo lenguaje visual; no redirigen a las vistas de la interfaz vigente:
+La experiencia Tailwind es funcional e independiente. Sus acciones permanecen en la ruta raíz y abren espacios internos con el mismo lenguaje visual:
 
 - Los pétalos de Mundos abren Constelación, Decretos, Hobbies, Travesías y Cuidado.
 - “Registrar movimiento” y “Nueva meta” abren Mi Balance con el formulario correspondiente.
@@ -268,7 +274,7 @@ Revalidación del ajuste interior de Umbral, 20 de agosto de 2026:
 - El control E2E de ancho del laboratorio pasó en escritorio emulando 320 × 568 y en móvil iPhone 13, incluida la ruta `detail=umbral`.
 - El recorrido E2E completo aprobó 17 de 18 casos. El único caso pendiente agotó el tiempo esperando estabilidad del botón animado “Entrar a Edad Dorada” en móvil; el mismo recorrido pasó en escritorio y no corresponde a la vista de Umbral modificada.
 
-Antes de una entrega externa conviene repetir un smoke test remoto con dos correos reales para validar el flujo OTP, la propagación entre usuarios/dispositivos y un conflicto concurrente. Las credenciales y correos de prueba no deben registrarse en el repositorio.
+Antes de reactivar el modo multiusuario conviene repetir un smoke test remoto con dos correos reales para validar OTP, propagación y conflictos. Mientras siga vigente el acceso local, esas pruebas no forman parte del arranque normal.
 
 ## Archivos clave
 
@@ -297,10 +303,11 @@ Antes de una entrega externa conviene repetir un smoke test remoto con dos corre
 
 ### Bonsái de cerezo de Mi Balance
 
-- La portada Tailwind de Mi Balance reemplaza el antiguo bloque de saldo oculto por un bonsái de cerezo, conservando la balanza, el sello de privacidad y las órbitas como atmósfera de fondo. El árbol completo abre la vista funcional.
-- Tanto la portada como la vista funcional representan los gastos como flores; los ingresos permanecen en el saldo y el historial, pero no se confunden visualmente con flores.
+- La portada Tailwind de Mi Balance no repite el título grande del eje; conserva el nombre en la navegación y como encabezado semántico oculto. Reemplaza el antiguo bloque de saldo oculto por un bonsái de cerezo, sin la antigua balanza circular flotante sobre el árbol y conservando el sello de privacidad y las órbitas como atmósfera de fondo. El árbol completo abre la vista funcional.
+- El bonsái y sus flores viven únicamente en la portada. La vista funcional evita repetirlos y conserva el acceso a los gastos mediante `Últimos movimientos`.
+- Solo la portada representa los gastos como flores; los ingresos permanecen en el saldo y el historial, pero no se confunden visualmente con flores.
 - Cada flor corresponde a un movimiento real de tipo `gasto`. Al tocarla se abre una lectura flotante con monto, categoría, nota y fecha, sin navegar a otra sección.
-- El árbol muestra hasta los 24 gastos más recientes y conserva debajo el historial de movimientos y las metas existentes.
+- La portada muestra hasta doce gastos recientes como flores. El detalle conserva el historial de movimientos y las metas existentes sin repetir el árbol.
 - En la portada, `Registrar movimiento` y `Nueva meta` abren paneles flotantes accesibles sobre la misma pantalla. Guardan mediante los repositorios existentes, no añaden `detail` ni `action` a la URL y el bonsái se actualiza inmediatamente al registrar un gasto.
 - La implementación consume `balance_movimientos` sin cambiar el esquema ni migrar datos locales. Respeta teclado, áreas táctiles, móvil y `prefers-reduced-motion`.
 - El ingreso base se conserva en `aureo_balance_ingreso_base`; los movimientos pueden marcarse como fijos mensuales y las ramas expresan el peso relativo de las categorías.
@@ -313,11 +320,13 @@ Antes de una entrega externa conviene repetir un smoke test remoto con dos corre
 - Travesías presenta un mapa SVG local y guarda coordenadas reales y “¿Qué viviste ahí?”.
 - La séptima activación ritual de un Decreto crea un nodo sin texto en Edad Dorada.
 - Núcleo exige la melodía de la franja actual en la misma pantalla, sin reintroducir una portada intermedia.
-- Al recuperar conexión, la aplicación intenta sincronizar las mutaciones pendientes.
+- Durante el modo de acceso local, recuperar conexión no dispara sincronización. Ese comportamiento queda aplazado junto con Supabase.
 - No hay distinción funcional Free/Premium en esta etapa.
 - Permanecen aplazadas y no confirmadas la exportación social, WhatsApp, imágenes generadas, notificaciones o resúmenes semanales, ejes personalizados, tiendas, traducciones y los “tres números únicos” del onboarding.
 
-Validación vigente: typecheck y build correctos; 7 pruebas unitarias y 42 recorridos E2E aprobados en escritorio y móvil; detector de diseño sin hallazgos.
+Validación histórica anterior a la última iteración: typecheck y build correctos; 7 pruebas unitarias y 42 recorridos E2E aprobados en escritorio y móvil; detector de diseño sin hallazgos.
+
+Validación del árbol de trabajo posterior a los ajustes visuales y al acceso local del 28 de agosto de 2026: build correcto; 3 archivos y 7 pruebas unitarias correctas; E2E focalizados de sesión local, portada Mundos y scrollbar correctos 2/2 cada uno; E2E focalizados de aura móvil y Balance correctos 4/4; detector de diseño sin hallazgos. La suite E2E completa todavía debe repetirse y los 42 recorridos históricos no describen el estado exacto de este árbol.
 
 - `docs/product/DECISIONES_CLIENTA.md`: decisiones vinculantes de producto.
 - `PRODUCT.md`: contexto durable de diseño.
@@ -329,20 +338,20 @@ Validación vigente: typecheck y build correctos; 7 pruebas unitarias y 42 recor
 - `src/data/repositories.ts`: acceso a colecciones.
 - `src/data/sync/catalog.ts`: lista explícita de colecciones remotas.
 - `src/data/sync/service.ts`: sincronización y mezcla.
-- `src/stores/auth.ts`: acceso por correo.
+- `src/stores/auth.ts`: sesión local persistente sin correo.
 - `supabase/migrations/202608190001_initial_aureo_sync.sql`: esquema remoto.
 - `tests/e2e/routes.spec.ts`: recorridos de aplicación y laboratorio.
 
 ## Cómo retomar
 
-1. Iniciar `pnpm dev` y `pnpm dev:tailwind` en terminales separadas.
+1. Iniciar `pnpm dev:tailwind`.
 2. Trabajar y validar primero en la experiencia Tailwind de `4175`.
-3. Usar la presentación original de `4174` únicamente para comparar identidad, contenido o comportamientos históricos.
+3. Usar las copias históricas únicamente para comparar identidad, contenido o comportamientos anteriores.
 4. Probar desde la portada Tailwind los accesos a Mundos, Mi Balance, Núcleo y Edad Dorada.
 5. Ejecutar las cuatro validaciones antes de cerrar cualquier nueva iteración.
 6. Si se modifica sincronización, repetir la verificación remota de tablas, RLS, RPC y exclusión de Núcleo.
 
 ## Decisiones pendientes
 
-- Definir cuándo retirar el nombre técnico y la ruta `laboratorio-tailwind` al preparar la experiencia Tailwind para publicación.
+- Definir cuándo retirar definitivamente la redirección compatible `/laboratorio-tailwind`; la experiencia principal ya usa `/`.
 - Repetir pruebas remotas multiusuario antes de liberar la sincronización a testers.

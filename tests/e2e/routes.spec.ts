@@ -11,12 +11,29 @@ test.beforeEach(async ({ page }) => {
 test('abre la superficie Tailwind sin errores visibles', async ({ page }) => {
   await page.goto('/#/')
   await expect(page.locator('main.tailwind-lab')).toBeVisible()
+  await expect(page.locator('input[type="email"]')).toHaveCount(0)
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('aureo_local_session'))).not.toBeNull()
+  const sessionBeforeReload = await page.evaluate(() => localStorage.getItem('aureo_local_session'))
+  expect(JSON.parse(sessionBeforeReload ?? '{}')).toMatchObject({ mode: 'local' })
+  await page.reload()
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('aureo_local_session'))).toBe(sessionBeforeReload)
   await expect(page.locator('main.tailwind-lab')).toHaveAttribute('data-zodiac', 'aries')
   await expect(page.getByRole('heading', { name: /Buenos días|Buenas tardes|Buenas noches/ })).toBeVisible()
   await expect(page.getByText('Vista experimental')).toHaveCount(0)
   await expect(page.getByText(/esta vista solo lee/i)).toHaveCount(0)
   const dimensions = await page.evaluate(() => ({ viewport: window.innerWidth, content: document.documentElement.scrollWidth }))
   expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport)
+  await expect.poll(() => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--document-scroll-track').trim())).toBe('#080b11')
+})
+
+test('mantiene Mundos en la semántica sin repetir su título en la portada', async ({ page }) => {
+  await page.goto('/#/?axis=mundos')
+  const worldsHeading = page.getByRole('heading', { name: 'Mundos' })
+  await expect(worldsHeading).toHaveClass(/tw:sr-only/)
+  await expect.poll(() => worldsHeading.evaluate((element) => {
+    const rect = element.getBoundingClientRect()
+    return { width: rect.width, height: rect.height, position: getComputedStyle(element).position }
+  })).toEqual({ width: 1, height: 1, position: 'absolute' })
 })
 
 test('conecta la portada Tailwind con las funciones reales de cada eje', async ({ page }, testInfo) => {
@@ -80,6 +97,8 @@ test('mantiene todos los espacios Tailwind dentro del ancho móvil', async ({ pa
   ]
   const verifyWidth = async () => {
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(await page.evaluate(() => window.innerWidth))
+    const workspace = page.locator('.tw-workspace')
+    if (await workspace.count()) await expect.poll(() => workspace.evaluate((element) => getComputedStyle(element).overflowX)).toBe('visible')
     const controls = page.locator('main.tailwind-lab :is(input, select, textarea, button):visible')
     const viewportWidth = await page.evaluate(() => window.innerWidth)
     for (const box of await controls.evaluateAll((elements) => elements.map((element) => {
@@ -105,7 +124,7 @@ test('mantiene todos los espacios Tailwind dentro del ancho móvil', async ({ pa
   }
 })
 
-test('convierte los gastos de Mi Balance en flores interactivas del cerezo', async ({ page }, testInfo) => {
+test('convierte los gastos en flores del cerezo sin repetir el árbol en el detalle', async ({ page }) => {
   test.setTimeout(90_000)
   await page.goto('/#/?axis=balance')
   const expenses = [
@@ -122,10 +141,15 @@ test('convierte los gastos de Mi Balance en flores interactivas del cerezo', asy
   await expect(page.locator('.balance-home-blossom')).toHaveCount(3)
   await expect(page.getByRole('button', { name: /Abrir Mi Balance\. 3 flores de gastos/ })).toBeVisible()
   await page.getByRole('button', { name: /Abrir Mi Balance/ }).click()
-  await expect(page.locator('.balance-blossom')).toHaveCount(3)
-  await page.locator('.balance-blossom').first().click()
-  await expect(page.getByRole('status')).toContainText('Un viaje tranquilo')
-  await expect(page.getByRole('status')).toContainText('$3.200')
+  const workspace = page.locator('.tw-workspace')
+  await expect.poll(() => workspace.evaluate((element) => ({ clipPath: getComputedStyle(element).clipPath, overflowX: getComputedStyle(element).overflowX }))).toEqual({ clipPath: 'none', overflowX: 'visible' })
+  await expect.poll(() => page.locator('.workspace-aura').evaluate((aura) => {
+    const workspaceTop = aura.parentElement?.getBoundingClientRect().top ?? 0
+    return aura.getBoundingClientRect().top < workspaceTop
+  })).toBe(true)
+  await expect(page.locator('.balance-grove')).toHaveCount(0)
+  await expect(page.getByRole('heading', { name: 'Últimos movimientos' }).locator('..')).toContainText('Un viaje tranquilo')
+  await expect(page.getByRole('heading', { name: 'Últimos movimientos' }).locator('..')).toContainText('$3.200')
 })
 
 test('incorpora el matiz zodiacal sin sustituir el oro base', async ({ page }) => {

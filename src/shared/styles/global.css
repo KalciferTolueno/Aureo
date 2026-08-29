@@ -1,6 +1,7 @@
 @font-face { font-family:'Aureo Serif'; src:url('/fonts/aureo-serif-200.ttf') format('truetype'); font-weight:200; font-style:normal; font-display:swap; }
 @font-face { font-family:'Aureo Serif'; src:url('/fonts/aureo-serif-300.ttf') format('truetype'); font-weight:300; font-style:normal; font-display:swap; }
 :root {
+  --document-scroll-track: transparent;
   --app-cosmos-background:
     radial-gradient(circle at 8% 32%, rgba(234,214,167,.5) 0 1px, transparent 1.5px),
     radial-gradient(circle at 24% 76%, rgba(129,115,183,.44) 0 1px, transparent 1.6px),
@@ -30,9 +31,10 @@ button { color: inherit; }
 a { color: inherit; text-decoration: none; }
 button, a, label, input, textarea, select { touch-action: manipulation; -webkit-tap-highlight-color: rgba(201,168,106,.16); }
 ::selection { color: var(--texto); background: var(--seleccion); }
-html { scrollbar-color: rgba(201,168,106,.48) transparent; scrollbar-width: thin; }
+html:has(.tailwind-lab) { --document-scroll-track: #080b11; background: #080b11; }
+html { scrollbar-color: rgba(201,168,106,.48) var(--document-scroll-track); scrollbar-width: thin; }
 ::-webkit-scrollbar { width: 9px; height: 9px; }
-::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-track { background: var(--document-scroll-track); }
 ::-webkit-scrollbar-thumb { border: 3px solid transparent; border-radius: 999px; background: rgba(201,168,106,.42); background-clip: padding-box; }
 input, textarea { caret-color: var(--oro-claro); }
 input::placeholder, textarea::placeholder { color: var(--texto-placeholder); opacity: 1; }

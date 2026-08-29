@@ -10,6 +10,7 @@ Esta es la referencia rápida para desarrolladores y asistentes de IA. Resume de
 - Conocimiento no existe como eje. Su ruta antigua solo redirige a Edad Dorada.
 - La fuente oficial usa Vue 3, TypeScript, Vite, Pinia y Vue Router. Las referencias antiguas a Vanilla JS como arquitectura permanente están obsoletas.
 - La experiencia debe sentirse como una aplicación continua, con fondo y navegación persistentes.
+- Los efectos de iluminación de los espacios internos forman parte del fondo continuo; no se recortan en los límites de cada sección.
 - La identidad general es Noche + Oro. El color zodiacal de la persona aparece como un matiz sutil en toda la experiencia sin reemplazar los colores base; Edad Dorada lo expresa con mayor presencia.
 - Por ahora no existe distinción funcional entre versión gratuita y Premium: los cinco ejes permanecen accesibles.
 - La IA queda fuera de la Fase 1 con 20 testers. Una futura IA reflejaría patrones; no será un chatbot ni dará consejos.
@@ -17,9 +18,10 @@ Esta es la referencia rápida para desarrolladores y asistentes de IA. Resume de
 
 ## Cuentas, sincronización y privacidad
 
-- La aplicación será multiusuario.
-- Umbral, Mundos, Mi Balance y Edad Dorada se sincronizan mediante Supabase con cuenta de correo.
-- Debe funcionar offline y sincronizar al recuperar conexión.
+- Durante la etapa local vigente, la aplicación inicia una sesión persistente del dispositivo en `localStorage` y no solicita correo.
+- La aplicación será multiusuario más adelante; el acceso por cuenta y la sincronización con Supabase quedan pausados mientras esté activo el modo local.
+- Umbral, Mundos, Mi Balance y Edad Dorada conservan la arquitectura de sincronización remota, pero el arranque local no realiza llamadas a Supabase.
+- Debe funcionar offline. Cuando se reactive el modo multiusuario, la sincronización podrá retomarse al recuperar conexión; durante el modo local vigente no se dispara.
 - Los conflictos se resuelven de forma determinista mediante `client_updated_at` y `mutation_id`.
 - Núcleo vive exclusivamente en el dispositivo. Nunca se envía a Supabase, analítica, copias remotas ni IA, ni siquiera cifrado.
 - Se mantiene el prefijo histórico `aureo_`.
@@ -28,7 +30,7 @@ Esta es la referencia rápida para desarrolladores y asistentes de IA. Resume de
 
 ## Onboarding
 
-- Debe ser breve: bienvenida, privacidad, nombre, nacimiento, signo, cuenta por correo, melodía de tres notas y espacios opcionales.
+- Debe ser breve: bienvenida, privacidad, nombre, nacimiento, signo, melodía de tres notas y espacios opcionales. En la etapa local no incluye cuenta ni correo.
 - No existe un paso para crear decretos.
 - Al terminar se entra inmediatamente a Umbral.
 - La melodía es la llave de Núcleo.
@@ -55,6 +57,7 @@ Esta es la referencia rápida para desarrolladores y asistentes de IA. Resume de
 - Contiene Vínculos, Decretos, Lo que cuido, Hobbies y Travesías. Mi Balance no aparece aquí.
 - Su entrada es una flor SVG de cinco pétalos; cada uno se ilumina cuando el submundo tiene contenido.
 - Frase: “Todo lo que ya es tuyo.” El grid aparece como segunda capa mediante “Ver todos”.
+- La portada no repite el título grande “Mundos”; el nombre permanece en la navegación y como encabezado semántico oculto.
 - Compañeros y Plantas viven bajo **Lo que cuido**.
 - Los recordatorios de cuidado son pequeños, poco invasivos y aparecen al entrar a Mundos.
 
@@ -63,6 +66,7 @@ Esta es la referencia rápida para desarrolladores y asistentes de IA. Resume de
 - Tipos: Amor, Familia, Amistad, Raíz y Guía.
 - Estado vacío: “Cada persona que agregas enciende un punto.”
 - Campos: “¿Cómo se llama?” y “¿Cuál es su signo?”.
+- Mi Constelación muestra directamente el mapa orbital y su leyenda, sin una frase explicativa adicional antes de las órbitas.
 
 ### Decretos
 
@@ -92,7 +96,9 @@ Esta es la referencia rápida para desarrolladores y asistentes de IA. Resume de
 - Símbolos de privacidad: ojo, balanza o sello.
 - Categorías: El nido, El cuerpo, El movimiento, El cuidado, Lo inesperado y Lo que construyo.
 - Las metas son Darumas elegidos por color.
-- La composición principal es un bonsái de cerezo: conserva la balanza y hace visible el peso relativo de las categorías mediante sus ramas; cada gasto abre una flor.
+- La portada no repite el título grande “Mi Balance”; el nombre permanece en la navegación y en las vistas funcionales.
+- La composición principal es un bonsái de cerezo que hace visible el peso relativo de las categorías mediante sus ramas; cada gasto abre una flor. No muestra una balanza flotante sobre el árbol.
+- El bonsái aparece solo en la portada. La vista funcional no repite el árbol ni sus flores; los gastos se consultan en “Últimos movimientos”.
 - Admite ingreso base y la marca de movimientos fijos mensuales.
 - Cada Daruma admite aportes hasta completar su objetivo y comunica el significado de su color.
 - Debe generar claridad, nunca ansiedad o juicio.
@@ -102,6 +108,7 @@ Esta es la referencia rápida para desarrolladores y asistentes de IA. Resume de
 ## Eje 4 — Núcleo
 
 - Es el espacio más privado de la persona y se abre con la melodía elegida.
+- La portada no repite el título grande “Núcleo”; el nombre permanece en la navegación y como encabezado semántico oculto.
 - La melodía se solicita una vez por franja: día, tarde y noche; la sesión vive en `sessionStorage`.
 - Los pensamientos son destellos con posición persistente y tono asignado localmente.
 - Tonos: Cosmos, Oro, Salvia, Ocaso, Ciruela y Marfil.
@@ -111,6 +118,7 @@ Esta es la referencia rápida para desarrolladores y asistentes de IA. Resume de
 ## Eje 5 — Edad Dorada
 
 - Reúne declaraciones, logros y momentos elegidos por la persona.
+- La portada no repite el título grande “Edad Dorada”; el nombre permanece en la navegación y como encabezado semántico oculto.
 - No es una línea temporal ni una lista: es una composición espacial tridimensional.
 - Metáfora cerrada: **Kintsugi Invertido / La Resina de Oro**. Revela el caos como parte valiosa de la escultura; no lo repara.
 - La superficie usa el color del signo como capa sobre `#080B11`.

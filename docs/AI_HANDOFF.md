@@ -62,8 +62,7 @@ D:\Work - TIgrr\Aureo\
 │   ├── docs\AI_HANDOFF.md         Este documento
 │   ├── docs\CONTINUIDAD_IMPLEMENTACION.md
 │   ├── docs\product\DECISIONES_CLIENTA.md
-│   ├── src\modules\experimental\ Experiencia Tailwind activa
-│   ├── src\modules\...            Presentación original conservada
+│   ├── src\modules\experimental\ Superficie Tailwind única y activa
 │   ├── src\data\                  Persistencia, migraciones y sync
 │   ├── supabase\migrations\       Fuente local del esquema remoto
 │   └── tests\                     Vitest y Playwright
@@ -73,7 +72,7 @@ D:\Work - TIgrr\Aureo\
 └── *.md / *.docx                   Especificaciones y memorias de producto
 ```
 
-En la verificación del 28-08-2026 no se detectó un repositorio Git en `aureo-web` ni en sus directorios superiores. No asumir que existen ramas, commits o restauración mediante Git; comprobarlo de nuevo antes de usar un flujo Git.
+`aureo-web` es un repositorio Git. En la documentación del 28-08-2026 la rama activa era `v1.2` y los ajustes más recientes estaban todavía sin commit sobre `db35fed`. Preservar siempre los cambios existentes de la usuaria y revisar `git status` antes de editar.
 
 ## Arranque local y separación de orígenes
 
@@ -83,26 +82,24 @@ Desde `aureo-web`:
 
 ```bash
 pnpm install
-pnpm dev
 pnpm dev:tailwind
 ```
 
 | Servicio | Comando | URL |
 | --- | --- | --- |
-| Presentación original | `pnpm dev` | `http://127.0.0.1:4174/` |
-| Experiencia Tailwind | `pnpm dev:tailwind` | `http://127.0.0.1:4175/#/laboratorio-tailwind` |
+| Experiencia Tailwind única | `pnpm dev:tailwind` | `http://127.0.0.1:4175/#/` |
 | Archivo Vercel local | `python -m http.server 4180 --directory "pagina de vercel"` desde la raíz | `http://127.0.0.1:4180/#/` |
 
-Los puertos `4174` y `4175` son orígenes diferentes. Sus `localStorage`, sesiones de Supabase y service workers son independientes. Un dato creado en un puerto no aparece automáticamente en el otro.
+El puerto canónico de trabajo es `4175`. Otros servidores o copias históricas pueden tener un origen y `localStorage` independientes; no usarlos como fuente vigente.
 
 La ruta Tailwind admite navegación interna mediante query string:
 
 ```text
-#/laboratorio-tailwind?axis=umbral
-#/laboratorio-tailwind?axis=mundos
-#/laboratorio-tailwind?axis=balance
-#/laboratorio-tailwind?axis=nucleo
-#/laboratorio-tailwind?axis=edad-dorada
+#/?axis=umbral
+#/?axis=mundos
+#/?axis=balance
+#/?axis=nucleo
+#/?axis=edad-dorada
 ```
 
 Los detalles funcionales usan `detail`, por ejemplo `detail=world-vinculos` o `detail=edad-dorada`. En Mi Balance, `Registrar movimiento` y `Nueva meta` ya no deben añadir `detail` ni `action`: abren paneles flotantes sobre `axis=balance`.
@@ -113,7 +110,7 @@ Los detalles funcionales usan `detail`, por ejemplo `detail=world-vinculos` o `d
 - TypeScript estricto.
 - Vite 8.
 - Vue Router con hash history.
-- Pinia para perfil, autenticación y estado compartido.
+- Pinia para perfil, sesión local y estado compartido.
 - Tailwind CSS 4 mediante `@tailwindcss/vite`; utilidades con prefijo `tw:` y sin Preflight global.
 - Persistencia local detrás de `StorageDriver` y repositorios.
 - Supabase detrás de servicios y repositorios; las vistas no llaman directamente al proveedor.
@@ -134,18 +131,15 @@ Archivos de entrada:
 
 | Ruta | Propósito |
 | --- | --- |
-| `/onboarding` | Incorporación y perfil |
-| `/` | Umbral original |
-| `/mundos` y subrutas | Mundos originales |
-| `/balance` | Mi Balance original |
-| `/finanzas` | Redirección histórica a `/balance` |
-| `/nucleo` | Núcleo original |
-| `/edad-dorada` | Edad Dorada original |
-| `/conocimiento` | Redirección histórica a `/edad-dorada` |
-| `/ajustes` | Copia, restauración, cuenta y preferencias |
-| `/laboratorio-tailwind` | Experiencia Tailwind activa |
+| `/` | Experiencia Tailwind activa y única |
+| `/laboratorio-tailwind` | Redirección compatible a `/` |
+| Cualquier otra ruta | Redirección a `/` |
 
 No eliminar redirecciones históricas sin una migración y una decisión explícita.
+
+## Registro de la iteración más reciente
+
+El inventario exacto de solicitudes, archivos modificados, contratos preservados y validaciones del 28-08-2026 está en `docs/changes/2026-08-28-ajustes-ui-y-acceso-local.md`. Leerlo antes de tocar títulos de portada, Mi Balance, auras, scrollbar o acceso local.
 
 ## Identidad visual y experiencia común
 
@@ -157,6 +151,8 @@ No eliminar redirecciones históricas sin una migración y una decisión explíc
 - No usar gamificación, presión, rankings, rachas punitivas ni lenguaje de productividad convencional.
 - Respetar teclado, foco visible, áreas táctiles, contraste, anchuras móviles y `prefers-reduced-motion`.
 - Los paneles y lecturas flotantes deben permanecer en la misma sección cuando la usuaria lo haya pedido; no introducir navegación innecesaria.
+- El aura compartida de los espacios internos se extiende fuera del encabezado y de la columna de contenido para integrarse con el fondo continuo hasta el borde móvil; ni la animación de entrada ni `.tw-workspace` deben recortarla. El límite exterior permanece en `.tailwind-lab`.
+- El carril del scrollbar raíz usa el mismo fondo Noche (`--cosmos`) para que el borde derecho de la aplicación no revele una franja transparente.
 
 ## Estado actual de la experiencia Tailwind
 
@@ -175,6 +171,7 @@ No eliminar redirecciones históricas sin una migración y una decisión explíc
 
 ### Mundos
 
+- La portada no repite el título grande `Mundos`; conserva el nombre en la navegación y un encabezado semántico oculto para accesibilidad.
 - Entrada mediante flor tridimensional de cinco pétalos.
 - Etiquetas radiales orientadas desde el centro hacia cada pétalo.
 - Cada pétalo conserva su color y abre su mundo sin salir a la interfaz original.
@@ -183,6 +180,7 @@ Submundos destacados:
 
 - **Mi Constelación**: vínculos distribuidos en tres órbitas. Amor al centro; Familia en la órbita media; Amistad, Raíz y Guía en la exterior. Las estrellas abren lecturas flotantes.
 - Mi Constelación guarda y muestra el signo opcional de cada vínculo.
+- Mi Constelación entra directamente al mapa orbital; no presenta una frase explicativa entre el encabezado y las órbitas.
 - **Lo que cuido**: mural editorial de afiches fotográficos. Permite elegir o arrastrar imágenes, limita archivos a 12 MB y optimiza localmente a JPEG con lado máximo de 1400 px.
 - Registros históricos de Compañeros y Plantas sin imagen siguen visibles como afiches tipográficos.
 - Travesías usa un mapa SVG local, guarda latitud/longitud y admite el recuerdo opcional “¿Qué viviste ahí?”.
@@ -192,11 +190,11 @@ Submundos destacados:
 
 ### Mi Balance
 
-- La portada usa un bonsái de cerezo como objeto principal y conserva la balanza, el sello `Privado por defecto` y las órbitas al fondo.
+- La portada no repite el título grande `Mi Balance`; conserva el nombre en la navegación y un encabezado semántico oculto para accesibilidad.
+- La portada usa un bonsái de cerezo como objeto principal, sin la antigua balanza circular flotante sobre el árbol; conserva el sello `Privado por defecto` y las órbitas al fondo.
 - Cada gasto real genera una flor. Los ingresos afectan el saldo y el historial, pero no se representan como flores.
-- La portada muestra hasta doce flores recientes; el detalle funcional puede mostrar hasta veinticuatro.
+- La portada muestra hasta doce flores recientes. El detalle funcional no repite el cerezo ni sus flores; los gastos permanecen disponibles en `Últimos movimientos`.
 - Tocar el árbol abre el espacio completo de Mi Balance.
-- Tocar una flor del detalle abre una lectura flotante con monto, categoría, nota y fecha.
 - `Registrar movimiento` y `Nueva meta` abren paneles flotantes mediante `Teleport`; no cambian de ruta.
 - Guardar un gasto actualiza el cerezo inmediatamente.
 - Los paneles se cierran con el botón, `Escape` o el fondo y se muestran por encima de la navegación móvil.
@@ -207,6 +205,7 @@ Submundos destacados:
 ### Núcleo
 
 - Es una única pantalla local; no debe reintroducirse una portada o detalle intermedio.
+- La portada no repite el título grande `Núcleo`; conserva el nombre en la navegación y un encabezado semántico oculto para accesibilidad.
 - El campo de escritura aparece debajo del plasma.
 - Cada pensamiento se guarda como punto luminoso.
 - El texto se clasifica localmente en una familia emocional con nombre y color.
@@ -216,6 +215,7 @@ Submundos destacados:
 
 ### Edad Dorada
 
+- La portada no repite el título grande `Edad Dorada`; conserva el nombre en la navegación y un encabezado semántico oculto para accesibilidad.
 - El Daruma de kintsugi reemplaza la antigua esfera rosada.
 - El Daruma es el acceso principal y también permite declarar desde la portada.
 - Cada declaración crea una grieta dorada accesible.
@@ -250,6 +250,7 @@ Datos deliberadamente locales incluyen:
 
 - `nucleo_pensamientos` y cualquier clave cuyo nombre empiece por `nucleo`.
 - `balance_oculto`, preferencias visuales y estado de sesión.
+- La sesión de acceso local en `aureo_local_session`; se crea una vez por dispositivo y no contiene correo.
 - `device_secret`.
 - La selección del eje Tailwind en `sessionStorage` (`aureo_tailwind_axis`).
 
@@ -283,7 +284,9 @@ Configuración local:
 
 Autenticación:
 
-- OTP por correo en `src/stores/auth.ts`.
+- `src/stores/auth.ts` usa temporalmente una sesión local persistente mediante `StorageDriver`; no pide correo ni inicializa Supabase.
+- `src/App.vue` no ejecuta sincronización remota al arrancar ni al recuperar conexión mientras esté vigente el modo local.
+- Los clientes y servicios de Supabase permanecen en el repositorio para una activación multiusuario posterior, pero no forman parte del flujo de acceso actual.
 - Perfil remoto en `src/data/supabase/profile.ts`.
 - Sincronización en `src/data/sync/service.ts`.
 - Catálogo remoto en `src/data/sync/catalog.ts`.
@@ -329,13 +332,22 @@ Cobertura E2E relevante:
 - Daruma y grietas de Edad Dorada.
 - Navegación adaptable, estado, persistencia local, offline y teclado.
 
-Última verificación conocida al 28-08-2026:
+Última verificación completa conocida antes de los ajustes de esta iteración:
 
 - `pnpm typecheck`: correcto.
 - `pnpm test`: 3 archivos, 7 pruebas correctas.
 - `pnpm build`: correcto.
 - `pnpm test:e2e`: 42 recorridos correctos en escritorio y móvil, incluidos melodía de Núcleo, signo de Vínculos, ritual de Decretos, mapa de Travesías y transferencia segura de Daruma.
 - Detector de diseño de los componentes modificados: sin hallazgos.
+
+Validación posterior a los ajustes documentados del 28-08-2026:
+
+- `pnpm build`: correcto.
+- `pnpm test`: 3 archivos y 7 pruebas correctas.
+- E2E focalizados de arranque/sesión local, portada Mundos y carril raíz: 2/2 correctos cada uno en escritorio y móvil.
+- E2E focalizados de aura móvil y detalle de Balance: 4/4 correctos en escritorio y móvil.
+- Detector de diseño de los archivos de interfaz modificados: sin hallazgos.
+- La suite E2E completa queda pendiente de repetición; no atribuir los 42 recorridos anteriores al último árbol de trabajo.
 
 Antes de una entrega externa ejecutar nuevamente la suite E2E completa. Las pruebas remotas multiusuario con dos correos reales y conflictos concurrentes deben repetirse antes de liberar sincronización a testers.
 
@@ -366,7 +378,7 @@ Antes de una entrega externa ejecutar nuevamente la suite E2E completa. Las prue
 
 ## Decisiones aún abiertas
 
-- Cuándo retirar el nombre técnico y la ruta `laboratorio-tailwind` para convertirla en la experiencia publicada por defecto.
+- Cuándo retirar definitivamente la redirección compatible `/laboratorio-tailwind`; la experiencia ya vive en `/`.
 - Cuándo promover la experiencia Tailwind al puerto/ruta principal de producción.
 - Validación remota final con múltiples usuarios y conflictos reales.
 - Momento de incorporar Capacitor para Android/iOS, después de estabilizar la PWA.

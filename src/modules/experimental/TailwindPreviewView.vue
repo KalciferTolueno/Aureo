@@ -393,7 +393,8 @@ onMounted(async () => {
                 <VueBitsLightRays v-if="selectedId === 'umbral'" class-name="umbral-light-rays" color="#d8b977" :speed="0.38" :spread="0.82" :length="1.65" />
                 <div :key="`heading-${selectedId}`" class="axis-heading-lab tw:flex tw:items-start tw:justify-between tw:gap-5 tw:pb-4" :class="`axis-heading-${selectedId}`">
                   <div>
-                    <h1 class="tw:mb-2 tw:max-w-none tw:text-balance tw:text-[clamp(2.65rem,7vw,5.6rem)] tw:font-extralight tw:leading-[0.96] tw:tracking-[-0.03em] tw:text-marfil">{{ selectedId === 'umbral' ? greeting : selected.label }}<span v-if="selectedId === 'umbral' && profile.name">, {{ profile.name }}</span></h1>
+                    <h1 v-if="['mundos', 'balance', 'nucleo', 'edad-dorada'].includes(selectedId)" class="tw:sr-only">{{ selected.label }}</h1>
+                    <h1 v-else class="tw:mb-2 tw:max-w-none tw:text-balance tw:text-[clamp(2.65rem,7vw,5.6rem)] tw:font-extralight tw:leading-[0.96] tw:tracking-[-0.03em] tw:text-marfil">{{ selectedId === 'umbral' ? greeting : selected.label }}<span v-if="selectedId === 'umbral' && profile.name">, {{ profile.name }}</span></h1>
                     <p class="tw:mb-0 tw:max-w-[48ch] tw:text-pretty tw:text-base tw:italic tw:leading-relaxed tw:text-marfil-suave tw:sm:text-lg">{{ selectedId === 'umbral' ? 'El día en números' : selected.phrase }}</p>
                   </div>
                   <div class="axis-heading-meta">
@@ -529,7 +530,6 @@ onMounted(async () => {
                             <path class="balance-home-pot" d="M291 503h150l-13 42H304Z" /><path class="balance-home-pot-rim" d="M282 494h168v16H282Z" />
                           </g>
                         </svg>
-                        <span class="balance-home-scale" aria-hidden="true"><AppIcon name="balance" /></span>
                         <span v-for="flower in balancePreviewFlowers" :key="flower.item.id" class="balance-home-blossom" :style="{ left: `${flower.x}%`, top: `${flower.y}%`, '--flower-delay': `${flower.delay}ms` }" aria-hidden="true"><i v-for="petal in 5" :key="petal" :style="{ '--petal': petal }" /><b /></span>
                         <span v-if="!balancePreviewFlowers.length" class="balance-home-empty">Tu cerezo espera su primera flor.</span>
                         <span v-else class="balance-home-count">{{ balancePreviewFlowers.length }} {{ balancePreviewFlowers.length === 1 ? 'gasto florece' : 'gastos florecen' }} en tu árbol</span>
@@ -776,9 +776,6 @@ onMounted(async () => {
 .balance-home-trunk-light { fill:rgba(244,218,198,.1); }
 .balance-home-branch,.balance-home-twig { fill:none; stroke:url(#balance-home-branch); stroke-linecap:round; stroke-linejoin:round; }
 .balance-home-branch { stroke-width:13; }.balance-home-twig { stroke-width:5; }.balance-home-tree .branch-two,.balance-home-tree .branch-five { stroke-width:9; }.balance-home-tree .branch-four { stroke-width:11; }
-.balance-home-scale { position:absolute; z-index:4; left:50%; top:5%; display:grid; width:3.7rem; aspect-ratio:1; place-items:center; border:1px solid rgba(201,168,106,.36); border-radius:50%; background:#0b0e15; color:#dcbf7d; box-shadow:0 16px 38px rgba(0,0,0,.3); transform:translateX(-50%); }
-.balance-home-scale::before,.balance-home-scale::after { content:''; position:absolute; inset:-8px; border:1px solid rgba(201,168,106,.18); border-radius:50%; border-block-color:transparent; animation:balance-orbit-breathe 5.8s ease-in-out infinite; }.balance-home-scale::after { inset:-17px; border-color:color-mix(in srgb,var(--zodiac-color) 26%,transparent); animation-delay:-2s; }
-.balance-home-scale svg { width:1.65rem; }
 .privacy-seal-lab { position:absolute; z-index:5; left:50%; top:19%; width:max-content; padding:5px 10px; border:1px solid rgba(125,167,151,.54); border-radius:999px; background:#171d29; color:#c4dfd5; box-shadow:0 8px 20px rgba(0,0,0,.3); font:700 .56rem/1 system-ui,sans-serif; letter-spacing:.08em; text-transform:uppercase; transform:translateX(-50%); }
 .balance-home-blossom { position:absolute; z-index:3; width:28px; height:28px; opacity:0; filter:blur(4px); transform:translate(-50%,-50%); animation:balance-home-bloom 560ms var(--flower-delay) cubic-bezier(.16,1,.3,1) forwards; }
 .balance-home-blossom i { position:absolute; left:8px; top:1px; width:11px; height:15px; border-radius:70% 70% 58% 58%; background:linear-gradient(155deg,#fff0f2,#e9b6c6 58%,#b9788d); box-shadow:0 5px 12px rgba(32,11,20,.2); transform:rotate(calc((var(--petal) - 1) * 72deg)) translateY(-5px); transform-origin:5.5px 12px; }
@@ -977,8 +974,6 @@ onMounted(async () => {
   .balance-sky-ring-three { width: min(28rem, 132vw); height: min(28rem, 132vw); }
   .balance-field-lab { min-height:25rem; }
   .balance-tree-entry { left:50%; width:112%; max-width:none; margin:0; transform:translateX(-50%); }
-  .balance-home-scale { top:4%; width:3.25rem; }
-  .balance-home-scale svg { width:1.4rem; }
   .privacy-seal-lab { top:18%; font-size:.52rem; }
   .balance-home-count,.balance-home-empty { max-width:76%; }
   .balance-overlay-layer { align-items:end; padding:1rem 1rem calc(1rem + env(safe-area-inset-bottom)); }
@@ -1035,7 +1030,7 @@ onMounted(async () => {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .lab-orbit, .balance-sky-ring, .balance-home-scale::before, .balance-home-scale::after, .balance-home-blossom, .world-flower-lab, .lab-flower-shadow, .lab-petal-surface, .lab-flower-core, .lab-flower-seed, .nucleus-cloth-lab, .nucleus-light-lab, .nucleus-preview-pool, .nucleus-preview-point>span, .golden-daruma-entry-art svg, .umbral-datum, .moon-atmosphere, .tarot-card { animation: none; }
+  .lab-orbit, .balance-sky-ring, .balance-home-blossom, .world-flower-lab, .lab-flower-shadow, .lab-petal-surface, .lab-flower-core, .lab-flower-seed, .nucleus-cloth-lab, .nucleus-light-lab, .nucleus-preview-pool, .nucleus-preview-point>span, .golden-daruma-entry-art svg, .umbral-datum, .moon-atmosphere, .tarot-card { animation: none; }
   .umbral-light-rays{display:none}
   .balance-home-blossom { opacity:1; filter:none; transform:translate(-50%,-50%); }
   .balance-overlay-enter-active,.balance-overlay-leave-active,.balance-overlay-enter-active .balance-overlay-sheet,.balance-overlay-leave-active .balance-overlay-sheet { transition-duration:1ms; }
