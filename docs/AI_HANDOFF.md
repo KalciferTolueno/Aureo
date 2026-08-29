@@ -104,6 +104,12 @@ La ruta Tailwind admite navegación interna mediante query string:
 
 Los detalles funcionales usan `detail`, por ejemplo `detail=world-vinculos` o `detail=edad-dorada`. En Mi Balance, `Registrar movimiento` y `Nueva meta` ya no deben añadir `detail` ni `action`: abren paneles flotantes sobre `axis=balance`.
 
+### Despliegue con Docker
+
+- `Dockerfile` compila la SPA con Node 22 y pnpm 11.20, y sirve `dist` con Nginx en el puerto `80`.
+- En EasyPanel, configurar el puerto HTTP interno `80`; no hace falta comando de arranque adicional.
+- `.dockerignore` excluye `.env.local`, dependencias, builds y logs del contexto de Docker. Las variables `VITE_*`, si se activan en el futuro, deben estar disponibles durante el build porque Vite las incorpora al bundle.
+
 ## Arquitectura vigente
 
 - Vue 3 con Composition API.
