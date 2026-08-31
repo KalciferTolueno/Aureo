@@ -10,6 +10,8 @@ defineProps<{ name: string; label?: string }>()
     <template v-else-if="name === 'moon'"><path d="M19 15.3A8 8 0 0 1 8.7 5 8 8 0 1 0 19 15.3Z"/></template>
     <template v-else-if="name === 'star'"><path d="m12 3 1.7 5.3L19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7L12 3Z"/></template>
     <template v-else-if="name === 'settings'"><circle cx="12" cy="12" r="3"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6 7 7M17 17l1.4 1.4M18.4 5.6 17 7M7 17l-1.4 1.4"/></template>
+    <template v-else-if="name === 'eye'"><path d="M2.4 12S5.8 6.5 12 6.5 21.6 12 21.6 12 18.2 17.5 12 17.5 2.4 12 2.4 12Z"/><circle cx="12" cy="12" r="2.6"/></template>
+    <template v-else-if="name === 'eye-off'"><path d="m4 4 16 16M9.9 9.9A3 3 0 0 0 12 15a3 3 0 0 0 2.5-4.6M6.4 6.7C4.2 8.2 2.8 10.4 2.4 12c1.2 2.5 4.8 7 9.6 7 1.7 0 3.2-.5 4.5-1.2M10 5.2c.6-.1 1.3-.2 2-.2 6.2 0 9.6 5.5 9.6 5.5a16.7 16.7 0 0 1-2.3 3.3"/></template>
     <template v-else-if="name === 'back'"><path d="m15 18-6-6 6-6"/></template>
     <template v-else-if="name === 'close'"><path d="m7 7 10 10M17 7 7 17"/></template>
     <template v-else-if="name === 'edit'"><path d="m4 20 4.2-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L4 20ZM13.8 7.2l3 3"/></template>

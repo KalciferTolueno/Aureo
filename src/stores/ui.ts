@@ -9,8 +9,8 @@ export const useUiStore = defineStore('ui', () => {
   const systemLight = ref(media.matches)
   const resolved = computed(() => preference.value === 'auto' ? (systemLight.value ? 'light' : 'dark') : preference.value)
   function apply() {
-    document.documentElement.dataset.modo = resolved.value
-    document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')?.setAttribute('content', resolved.value === 'light' ? '#f5f0e8' : '#080b11')
+    document.documentElement.dataset.modo = 'dark'
+    document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')?.setAttribute('content', '#080b11')
   }
   function onSystemTheme(event: MediaQueryListEvent) { systemLight.value = event.matches; if (preference.value === 'auto') apply() }
   async function load() { preference.value = (await storage.get<ThemePreference>('ui_modo')) ?? 'auto'; media.removeEventListener('change', onSystemTheme); media.addEventListener('change', onSystemTheme); apply() }

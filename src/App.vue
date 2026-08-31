@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { RouterView } from 'vue-router'
+import OverlayScrollbar from '@/shared/components/OverlayScrollbar.vue'
 import ReloadPrompt from '@/shared/components/ReloadPrompt.vue'
+import OnboardingView from '@/modules/experimental/onboarding/OnboardingView.vue'
 import { useProfileStore } from '@/stores/profile'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
@@ -19,8 +21,10 @@ onMounted(async () => {
   <div class="shell">
     <a class="skip-link" href="#main-content">Saltar al contenido</a>
     <div id="main-content" class="route-content" tabindex="-1">
-      <RouterView />
+      <OnboardingView v-if="profile.loaded && !profile.onboardingComplete" />
+      <RouterView v-else-if="profile.loaded" />
     </div>
+    <OverlayScrollbar />
     <ReloadPrompt />
   </div>
 </template>

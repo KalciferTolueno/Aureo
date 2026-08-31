@@ -20,7 +20,10 @@ export const useProfileStore = defineStore('profile', () => {
   const activeSections = computed(() => new Set(profile.value?.secciones_activas ?? []))
 
   async function load() { profile.value = await profileRepository.load(); loaded.value = true }
-  async function save(next: Profile) { profile.value = next; await profileRepository.save(next) }
+  async function save(next: Profile) {
+    await profileRepository.save(next)
+    profile.value = next
+  }
   async function update(patch: Partial<Profile>) { await save({ ...(profile.value ?? defaultProfile()), ...patch }) }
   async function setSection(section: OptionalSection, active: boolean) {
     const sections = new Set(profile.value?.secciones_activas ?? [])

@@ -1,6 +1,6 @@
 # Decisiones confirmadas por la clienta — Áureo
 
-Última consolidación: 28 de agosto de 2026.
+Última consolidación: 31 de agosto de 2026.
 
 Esta es la referencia rápida para desarrolladores y asistentes de IA. Resume decisiones confirmadas; ante dudas se debe consultar también la especificación completa del eje.
 
@@ -10,6 +10,7 @@ Esta es la referencia rápida para desarrolladores y asistentes de IA. Resume de
 - Conocimiento no existe como eje. Su ruta antigua solo redirige a Edad Dorada.
 - La fuente oficial usa Vue 3, TypeScript, Vite, Pinia y Vue Router. Las referencias antiguas a Vanilla JS como arquitectura permanente están obsoletas.
 - La experiencia debe sentirse como una aplicación continua, con fondo y navegación persistentes.
+- El scroll del documento es flotante: no reserva un gutter ni empuja el contenido al cambiar de eje.
 - Los efectos de iluminación de los espacios internos forman parte del fondo continuo; no se recortan en los límites de cada sección.
 - La identidad general es Noche + Oro. El color zodiacal de la persona aparece como un matiz sutil en toda la experiencia sin reemplazar los colores base; Edad Dorada lo expresa con mayor presencia.
 - Por ahora no existe distinción funcional entre versión gratuita y Premium: los cinco ejes permanecen accesibles.
@@ -18,7 +19,7 @@ Esta es la referencia rápida para desarrolladores y asistentes de IA. Resume de
 
 ## Cuentas, sincronización y privacidad
 
-- Durante la etapa local vigente, la aplicación inicia una sesión persistente del dispositivo en `localStorage` y no solicita correo.
+- Durante la etapa local vigente, la aplicación inicia una sesión persistente del dispositivo en `localStorage`. El correo del onboarding se guarda solo en el perfil local y no abre cuenta ni sincronización.
 - La aplicación será multiusuario más adelante; el acceso por cuenta y la sincronización con Supabase quedan pausados mientras esté activo el modo local.
 - Umbral, Mundos, Mi Balance y Edad Dorada conservan la arquitectura de sincronización remota, pero el arranque local no realiza llamadas a Supabase.
 - Debe funcionar offline. Cuando se reactive el modo multiusuario, la sincronización podrá retomarse al recuperar conexión; durante el modo local vigente no se dispara.
@@ -30,7 +31,8 @@ Esta es la referencia rápida para desarrolladores y asistentes de IA. Resume de
 
 ## Onboarding
 
-- Debe ser breve: bienvenida, privacidad, nombre, nacimiento, signo, melodía de tres notas y espacios opcionales. En la etapa local no incluye cuenta ni correo.
+- Debe ser breve: bienvenida, privacidad, nombre, nacimiento, signo, correo local, melodía de tres notas y espacios opcionales.
+- El correo se pide después de revelar el signo y se guarda solo en el dispositivo. No inicia sesión remota ni llama a Supabase.
 - No existe un paso para crear decretos.
 - Al terminar se entra inmediatamente a Umbral.
 - La melodía es la llave de Núcleo.
@@ -40,14 +42,19 @@ Esta es la referencia rápida para desarrolladores y asistentes de IA. Resume de
 ## Eje 1 — Umbral
 
 - Es el inicio del día; no es un calendario ni una lista tipo Google Tasks.
-- Muestra fecha, información lunar o simbólica, número, signo del día, arcano y palabra de poder.
+- El saludo usa *El día es tuyo / La tarde es tuya / La noche es tuya*, centrado, con fecha de solo día + número y una máxima filosófica rotatoria.
+- Palabra de poder se muestra como **Tu sello**.
+- La carta abierta incluye la frase editorial del arcano en oro cursiva.
+- El **Número** flota a la derecha de la luna; el **Arcano** permanece a la izquierda.
+- La luz de Umbral permanece siempre encendida. No hay selector ☉/☾; el fondo permanece `#080B11`.
+- La portada se llama **Carta del día** y muestra la tira completa de 8 fases lunares SVG.
 - El arcano diario se conserva y se acumula en un mazo histórico consultable.
 - El signo del día es universal, no el signo natal.
 - M4 se llama **Lo que tengo en mente hoy**.
 - El botón de guardar solo aparece cuando existe texto.
 - Una intención completada desaparece y se transforma en un punto de luz.
 - Estado vacío: “El día está en blanco. También es un lujo.”
-- Incluye **Mi pulso de hoy**, con pregunta diaria y respuesta libre.
+- Incluye **Mi pulso de hoy** en la portada de Umbral, con pregunta diaria y respuesta libre. El registro viaja silenciosamente a Edad Dorada, sin feedback visible en Umbral.
 - Cultivo y Destellos dejan de mostrarse, pero sus datos se preservan.
 - El símbolo de marca Luna + espiral Fibonacci sigue vigente.
 - Existe captura rápida global para guardar algo para hoy o después; nunca aparece dentro de Núcleo.
@@ -99,6 +106,7 @@ Esta es la referencia rápida para desarrolladores y asistentes de IA. Resume de
 - Las metas son Darumas elegidos por color.
 - La portada no repite el título grande “Mi Balance”; el nombre permanece en la navegación y en las vistas funcionales.
 - La composición principal es un bonsái de cerezo que hace visible el peso relativo de las categorías mediante sus ramas; cada gasto abre una flor. No muestra una balanza flotante sobre el árbol.
+- En la portada, “Lo que tengo hoy” y el saldo van encima del bonsái, sin recuadro circular. “Cada gasto abre una flor.” aparece debajo de Registrar movimiento y Nueva meta. No se muestra la frase vacía “Tu cerezo espera su primera flor.”
 - El bonsái aparece solo en la portada. La vista funcional no repite el árbol ni sus flores; los gastos se consultan en “Últimos movimientos”.
 - Admite ingreso base y la marca de movimientos fijos mensuales.
 - Cada Daruma admite aportes hasta completar su objetivo y comunica el significado de su color.
@@ -131,7 +139,8 @@ Esta es la referencia rápida para desarrolladores y asistentes de IA. Resume de
 - Declaración libre, sin categorías ni límite.
 - Un nodo nuevo nace en el centro y desplaza los anteriores hacia afuera.
 - Toque: pulso de luz. Pulsación larga: muestra temporalmente el texto.
-- El modo contemplación retira toda la interfaz.
+- El detalle de Edad Dorada es el espacio contemplativo: Daruma, grietas y declaración, con Volver. No hay un segundo botón “Contemplar mi Daruma” ni un modo que retire la navegación.
+- El detalle no repite el título visible “Edad Dorada” ni el sigilo circular del encabezado; el nombre permanece en la navegación y como encabezado semántico oculto.
 - Los ejes no se mezclan automáticamente. Los envíos admitidos deben respetar los gestos voluntarios documentados.
 
 ## Fuera del alcance actual

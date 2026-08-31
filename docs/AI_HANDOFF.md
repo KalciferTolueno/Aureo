@@ -2,7 +2,7 @@
 document: aureo-ai-handoff
 status: canonical
 audience: coding-agents-and-maintainers
-last_verified: 2026-08-29
+last_verified: 2026-08-31
 workspace_root: D:\Work - TIgrr\Aureo
 canonical_codebase: aureo-web
 active_product_surface: tailwind
@@ -158,17 +158,27 @@ El inventario exacto de solicitudes, archivos modificados, contratos preservados
 - Respetar teclado, foco visible, áreas táctiles, contraste, anchuras móviles y `prefers-reduced-motion`.
 - Los paneles y lecturas flotantes deben permanecer en la misma sección cuando la usuaria lo haya pedido; no introducir navegación innecesaria.
 - El aura compartida de los espacios internos se extiende fuera del encabezado y de la columna de contenido para integrarse con el fondo continuo hasta el borde móvil; ni la animación de entrada ni `.tw-workspace` deben recortarla. El límite exterior permanece en `.tailwind-lab`.
-- El carril del scrollbar raíz usa el mismo fondo Noche (`--cosmos`) para que el borde derecho de la aplicación no revele una franja transparente.
+- El carril del scrollbar raíz usa el mismo fondo Noche (`--cosmos`, `--document-scroll-track: #080b11`) para que el borde derecho de la aplicación no revele una franja transparente.
+- Con la superficie Tailwind u onboarding montados, el scrollbar nativo del documento se oculta (`scrollbar-width: none`) para no reservar gutter ni desplazar el contenido entre ejes. Un pulgar flotante (`OverlayScrollbar`) se superpone a la derecha, oro sobre noche, y solo aparece cuando hay overflow. La navegación móvil se ancla con `left` + `right`.
 - El cambio entre ejes reemplaza los escenarios de forma superpuesta y breve: la sección saliente queda fuera del flujo durante 120 ms y la entrante define la altura inmediatamente. No reintroducir `mode="out-in"`, desenfoque o `clip-path` en `axis-ritual`, porque provocaban un colapso intermedio y parpadeo. El encabezado compartido no usa una clave reactiva y el cambio de eje vuelve arriba sin scroll animado.
 
 ## Estado actual de la experiencia Tailwind
+
+### Onboarding y configuración
+
+- Quien llega sin `onboarding_completo` recorre el ritual de junio: bienvenida M6, privacidad, nombre íntimo, origen, revelación del signo, correo local, llave musical de tres notas, Lo que cuido y transición a Umbral. No hay decreto ni botón intermedio “Esta es mi llave”.
+- La melodía usa el mismo timbre seno y las mismas frecuencias que la copia histórica de Vercel. El hash `Do|Re|Mi` abre Núcleo. Las notas suenan al tocarlas; el acorde final pulsa al acertar.
+- **Configuración de mi Áureo** se abre desde el perfil (escritorio) o el último ítem de la barra móvil (Áureo). Incluye la promesa de privacidad, Lo que cuido, copia/restauración y borrado con doble toque.
+- **Momento de apertura** aparece una vez al día al entrar a Umbral, con frase por signo. No cambia el fondo Noche.
 
 ### Renovación visual v1.3
 
 - La experiencia conserva su identidad Noche + Oro, pero reemplaza el aspecto de paneles administrativos rígidos por una gramática de superficies orgánicas, halos y cápsulas de acción. Navegación, entradas, formularios, lecturas y estados vacíos comparten esta misma dirección en los cinco ejes.
 - Aurora, Particles y Spotlight Card fueron retirados por decisión explícita de la usuaria porque su estética no se integraba con Áureo. No reintroducir componentes de React Bits o Vue Bits por defecto.
 - `TailwindPreviewView.vue` y `TailwindWorkspace.vue` conservan raíces semánticas nativas, el fondo Noche + Oro y las animaciones propias de cada eje. `VueBitsLightRays` permanece únicamente en Umbral como efecto histórico ya integrado.
-- Los escenarios de portada ocupan la altura disponible del viewport en escritorio y móvil. Las animaciones restantes respetan `prefers-reduced-motion`; las interacciones y el foco visible no dependen del movimiento.
+- Las portadas agrupan objeto-signatura y acciones. Mundos, Mi Balance, Núcleo y Edad Dorada centran ese grupo en el espacio libre sin estirar el objeto; Umbral conserva saludo, fecha, máxima y la carta con número y arcano visibles. Los títulos grandes de esos cuatro ejes siguen ocultos. Las animaciones respetan `prefers-reduced-motion`; las interacciones y el foco visible no dependen del movimiento.
+
+Pulido de densidad (31-08-2026): se retiró el encabezado duplicado (frase, fecha y sigilo) en las portadas que ya nombran el eje en la navegación; Núcleo ya no coloca “Solo aquí” sobre el plasma; Tu sello, mente y pulso de Umbral se agrupan; Número flota a la derecha de la luna y Arcano a la izquierda; los campos de escritura bajan de escala. Identidad Noche + Oro, objetos-signatura y funciones intactas. En Mi Balance, el saldo va encima del bonsái y sin recuadro circular; en Edad Dorada el detalle no muestra título visible, sigilo ni el botón duplicado “Contemplar mi Daruma”. La barra móvil es más compacta (~48 px de toque) y el sello de captura se reancora encima.
 
 Validación de la renovación v1.3 (29-08-2026): `pnpm typecheck`, `pnpm test` (3 archivos, 7 pruebas) y `pnpm build` correctos; detector de diseño sin hallazgos; revisión manual de escritorio y móvil aprobada. Los cuatro recorridos E2E focalizados de espacios y detalle de Balance pasan en escritorio y móvil. La pasada completa anterior cerró en 32/40 antes de corregir el recorte de los espacios; aún se debe repetir completa antes de una entrega externa para confirmar los cuatro escenarios restantes (dos esperan una acción ausente en el detalle de Balance y dos dependen del cierre temporizado de diálogos móviles).
 
@@ -176,26 +186,34 @@ Validación del ajuste de viewport y movimiento (29-08-2026): `pnpm typecheck`, 
 
 Validación tras retirar Aurora, Particles y Spotlight (29-08-2026): `pnpm typecheck`, `pnpm test` (7 pruebas), `pnpm build` y 6 recorridos E2E de arranque, semántica de Mundos y cambio de eje correctos en escritorio y móvil. La app vuelve a cargar en `4175` sin los canvases ni halos externos.
 
-La densidad de escritorio se compactó sin alterar móvil: desde `1024px` el contenido útil se limita a `72rem`, los títulos editoriales y los objetos-signatura usan máximos menores, y los detalles reducen separación y escala conservando controles táctiles y el fondo a viewport completo. A `1920px`, el saludo queda en `68px` y el contenido en `1152px`; a `390px` conserva `42.4px`, sin desbordamiento horizontal. Validación del 29-08-2026: revisión visual a `1440x900`, `1920x1080` y `390x844`, consola sin errores, `pnpm typecheck`, `pnpm test` (7 pruebas), `pnpm build` y 6 recorridos E2E focalizados correctos en escritorio y móvil. El detector solo conserva avisos advisory preexistentes sobre colores y radios fuera de `DESIGN.md`.
+La densidad de escritorio y móvil se compactó el 31-08-2026: el contenido útil se limita a `72rem` desde `1024px`, los títulos editoriales y los objetos-signatura usan máximos menores, y las portadas agrupan objeto y acción sin forzar que el objeto llene el viewport. Validación en esta sesión: typecheck y 19 pruebas unitarias correctas; Mundos permanece en `sr-only` y más alto que Umbral al cambiar de eje; Registrar movimiento y captura de Núcleo visibles en portada.
 
 ### Umbral
 
-- Portada orbital con fecha integrada en el encabezado, número del día, signo, arcano y fase lunar SVG.
+- Portada orbital con el módulo **Carta del día**: número del día, tira de 8 fases lunares SVG, arcano y signo dentro de la carta abierta.
+- Cabecera ritual centrada: fecha, saludo y máxima. La luz de Umbral permanece siempre encendida; no hay selector ☉/☾.
+- **Tu sello** muestra la Palabra de Poder; al abrir el mazo aparece la frase editorial del arcano en oro cursiva.
+- La luz de Umbral permanece siempre encendida. El fondo permanece `#080b11`. No reintroducir el selector ☉/☾.
+- En Umbral, títulos y valores usan Fraunces 200–300 y etiquetas/cuerpo Spectral 300.
+- **Mi pulso de hoy** aparece en la portada de Umbral; al guardar viaja silenciosamente a Edad Dorada (`origen: pulso_umbral`) sin feedback visible en Umbral.
+- Captura rápida global mediante un sello flotante en todos los ejes excepto Núcleo. Al guardar pregunta *¿Para hoy o para guardar?*; “para hoy” precarga M4 y “para guardar” sella el destello en `ideas`.
+- Validación del 31-08-2026 (onboarding + configuración + Umbral): `pnpm typecheck`, `pnpm test` (5 archivos, 19 pruebas), `pnpm build` y E2E de arranque, onboarding y órbita correctos en escritorio y móvil (`--workers=1`).
 - Umbral incorpora el efecto Light Rays de Vue Bits adaptado a la identidad Noche + Oro mediante `ogl`; solo renderiza mientras está visible y se desactiva con movimiento reducido.
 - En móvil los detalles de cada eje (Vínculos, Decretos, Hobbies, Travesías, Cuidado, Balance, Núcleo y Edad Dorada) se abren como hoja flotante inferior (patrón app) con botón de cierre, en lugar de reemplazar toda la vista; en escritorio conservan la vista completa.
 - En Núcleo, tocar un pensamiento muestra su texto como lectura flotante en la posición de la estrella (sin el texto central "Solo aquí"). En Edad Dorada, el daruma se muestra ampliado y el texto de cada grieta aparece en la posición de la grieta; se quitó la boca del daruma.
-- Mi Balance quedó sin botones duplicados en la portada: el árbol es la entrada y la gestión vive en la tarjeta flotante del detalle. La interfaz móvil se compactó (menos padding, botones y títulos más pequeños) para adaptarse mejor a la pantalla.
+- Mi Balance conserva en portada el árbol, el total del día y los botones **Registrar movimiento** / **Nueva meta** (overlays). El detalle sigue siendo la gestión completa.
 - La luna no tiene un círculo negro exterior innecesario.
+- El Número flota a la derecha de la luna; el Arcano permanece abajo a la izquierda.
 - Las órbitas se mantienen alejadas del centro lunar.
 - El arcano se presenta como un mazo con animación de barajado y alternativa para movimiento reducido.
 - El arcano del día se persiste en `umbral_arcanos` y el mazo permite consultar los registros diarios anteriores.
-- El detalle conserva intenciones y pulso diario.
+- El detalle conserva intenciones; el pulso diario también se responde desde la portada.
 
 ### Mundos
 
 - La portada no repite el título grande `Mundos`; conserva el nombre en la navegación y un encabezado semántico oculto para accesibilidad.
 - Entrada mediante flor tridimensional de cinco pétalos.
-- Etiquetas radiales orientadas desde el centro hacia cada pétalo.
+- Etiquetas radiales orientadas desde el centro hacia cada pétalo. En Hobbies y Lo que cuido el texto se voltea para no quedar boca abajo.
 - Cada pétalo conserva su color y abre su mundo sin salir a la interfaz original.
 
 Submundos destacados:
@@ -213,7 +231,7 @@ Submundos destacados:
 ### Mi Balance
 
 - La portada no repite el título grande `Mi Balance`; conserva el nombre en la navegación y un encabezado semántico oculto para accesibilidad.
-- La portada usa un bonsái de cerezo como objeto principal, sin la antigua balanza circular flotante sobre el árbol; conserva el sello `Privado por defecto` y las órbitas al fondo.
+- La portada usa un bonsái de cerezo como objeto principal, sin la antigua balanza circular flotante sobre el árbol; el saldo aparece censurado con asteriscos y un botón de ojo lo revela. La preferencia vive en `balance_oculto`. “Lo que tengo hoy” y el monto van encima del bonsái, sin recuadro circular. “Cada gasto abre una flor.” queda debajo de Registrar movimiento / Nueva meta. No se muestra “Tu cerezo espera su primera flor.”
 - Cada gasto real genera una flor. Los ingresos afectan el saldo y el historial, pero no se representan como flores.
 - La portada muestra hasta doce flores recientes. El detalle funcional no repite el cerezo ni sus flores; los gastos permanecen disponibles en `Últimos movimientos`.
 - Tocar el árbol abre el espacio completo de Mi Balance.
@@ -228,7 +246,7 @@ Submundos destacados:
 
 - Es una única pantalla local; no debe reintroducirse una portada o detalle intermedio.
 - La portada no repite el título grande `Núcleo`; conserva el nombre en la navegación y un encabezado semántico oculto para accesibilidad.
-- El campo de escritura aparece debajo del plasma.
+- La melodía se solicita una vez por franja. Si se olvida, **Recordar mi melodía** ilumina el orden correcto en las notas, sin persistir la secuencia en texto.
 - Cada pensamiento se guarda como punto luminoso.
 - El texto se clasifica localmente en una familia emocional con nombre y color.
 - Emociones afines se agrupan y forman zonas de plasma animado.
@@ -242,7 +260,7 @@ Submundos destacados:
 - El Daruma es el acceso principal y también permite declarar desde la portada.
 - Cada declaración crea una grieta dorada accesible.
 - La grieta seleccionada revela su significado sin abandonar la composición.
-- El modo contemplación retira navegación y controles.
+- El detalle no repite el título visible ni el sigilo circular; el Daruma, las grietas y la declaración son el espacio contemplativo. No hay botón “Contemplar mi Daruma” ni un modo que oculte la navegación.
 - El color zodiacal aparece como capa sobre la identidad base.
 
 ## Modelo de datos local
