@@ -2,7 +2,7 @@
 document: aureo-ai-handoff
 status: canonical
 audience: coding-agents-and-maintainers
-last_verified: 2026-08-31
+last_verified: 2026-09-03
 workspace_root: D:\Work - TIgrr\Aureo
 canonical_codebase: aureo-web
 active_product_surface: tailwind
@@ -168,7 +168,7 @@ El inventario exacto de solicitudes, archivos modificados, contratos preservados
 
 - Quien llega sin `onboarding_completo` recorre el ritual de junio: bienvenida M6, privacidad, nombre íntimo, origen, revelación del signo, correo local, llave musical de tres notas, Lo que cuido y transición a Umbral. No hay decreto ni botón intermedio “Esta es mi llave”.
 - La melodía usa el mismo timbre seno y las mismas frecuencias que la copia histórica de Vercel. El hash `Do|Re|Mi` abre Núcleo. Las notas suenan al tocarlas; el acorde final pulsa al acertar.
-- **Configuración de mi Áureo** se abre desde el perfil (escritorio) o el último ítem de la barra móvil (Áureo). Incluye la promesa de privacidad, Lo que cuido, copia/restauración y borrado con doble toque.
+- **Configuración de mi Áureo** se abre desde el perfil (escritorio) o el último ítem de la barra móvil (Áureo). Incluye la promesa de privacidad, Lo que cuido, copia/restauración y borrado con doble toque. El panel es denso: título ~1.02rem, cuerpo ~0.74rem, poco aire entre bloques; los toques siguen en 44px.
 - **Momento de apertura** aparece una vez al día al entrar a Umbral, con frase por signo. No cambia el fondo Noche.
 
 ### Renovación visual v1.3
@@ -191,22 +191,24 @@ La densidad de escritorio y móvil se compactó el 31-08-2026: el contenido úti
 ### Umbral
 
 - Portada orbital con el módulo **Carta del día**: número del día, tira de 8 fases lunares SVG, arcano y signo dentro de la carta abierta.
-- Cabecera ritual centrada: fecha, saludo y máxima. La luz de Umbral permanece siempre encendida; no hay selector ☉/☾.
+- Cabecera ritual en una sola fila: fecha a la izquierda, saludo al centro y selector ☉/☾ a la derecha. El fondo permanece `#080b11`; el selector solo cambia la luminosidad (luz de Vue Bits y luna). Sin elección, sigue la hora (día 06–20, noche el resto). La preferencia vive en `umbral_lumen` y no se sincroniza.
 - **Tu sello** muestra la Palabra de Poder; al abrir el mazo aparece la frase editorial del arcano en oro cursiva.
-- La luz de Umbral permanece siempre encendida. El fondo permanece `#080b11`. No reintroducir el selector ☉/☾.
 - En Umbral, títulos y valores usan Fraunces 200–300 y etiquetas/cuerpo Spectral 300.
 - **Mi pulso de hoy** aparece en la portada de Umbral; al guardar viaja silenciosamente a Edad Dorada (`origen: pulso_umbral`) sin feedback visible en Umbral.
-- Captura rápida global mediante un sello flotante en todos los ejes excepto Núcleo. Al guardar pregunta *¿Para hoy o para guardar?*; “para hoy” precarga M4 y “para guardar” sella el destello en `ideas`.
+- Captura rápida global mediante un sello flotante en todos los ejes excepto Núcleo. El panel muestra un campo contenido y **Sellar** siempre visible (inactivo sin texto). Al guardar pregunta *¿Para hoy o para guardar?*; “para hoy” precarga M4 y “para guardar” sella el destello en `ideas`.
 - Validación del 31-08-2026 (onboarding + configuración + Umbral): `pnpm typecheck`, `pnpm test` (5 archivos, 19 pruebas), `pnpm build` y E2E de arranque, onboarding y órbita correctos en escritorio y móvil (`--workers=1`).
 - Umbral incorpora el efecto Light Rays de Vue Bits adaptado a la identidad Noche + Oro mediante `ogl`; solo renderiza mientras está visible y se desactiva con movimiento reducido.
 - En móvil los detalles de cada eje (Vínculos, Decretos, Hobbies, Travesías, Cuidado, Balance, Núcleo y Edad Dorada) se abren como hoja flotante inferior (patrón app) con botón de cierre, en lugar de reemplazar toda la vista; en escritorio conservan la vista completa.
 - En Núcleo, tocar un pensamiento muestra su texto como lectura flotante en la posición de la estrella (sin el texto central "Solo aquí"). En Edad Dorada, el daruma se muestra ampliado y el texto de cada grieta aparece en la posición de la grieta; se quitó la boca del daruma.
 - Mi Balance conserva en portada el árbol, el total del día y los botones **Registrar movimiento** / **Nueva meta** (overlays). El detalle sigue siendo la gestión completa.
 - La luna no tiene un círculo negro exterior innecesario.
-- El Número flota a la derecha de la luna; el Arcano permanece abajo a la izquierda.
+- El Arcano flota a la derecha de la luna y el Número a la izquierda, a la altura del centro del Arcano; ambos quedan por encima de la tira de fases.
+- En la cabecera, la fecha, el saludo y ☉/☾ comparten la misma altura: fecha a la izquierda, saludo al centro, ☉/☾ a la derecha.
+- La portada y el detalle de Umbral compactan intenciones, pulso y títulos para que quepan juntos.
 - Las órbitas se mantienen alejadas del centro lunar.
 - El arcano se presenta como un mazo con animación de barajado y alternativa para movimiento reducido.
-- El arcano del día se persiste en `umbral_arcanos` y el mazo permite consultar los registros diarios anteriores.
+- **Abrir el mazo** (y el Número) abre una ventana flotante sobre Umbral, no un bloque que empuja sello, intenciones y pulso. El overlay vuelve a barajar, muestra la frase editorial y **Tu mazo diario** (últimos 7 días). Se cierra con el botón, `Escape` o el fondo.
+- El arcano del día se persiste en `umbral_arcanos` y el resto del archivo permanece guardado.
 - El detalle conserva intenciones; el pulso diario también se responde desde la portada.
 
 ### Mundos
@@ -236,8 +238,12 @@ Submundos destacados:
 - La portada muestra hasta doce flores recientes. El detalle funcional no repite el cerezo ni sus flores; los gastos permanecen disponibles en `Últimos movimientos`.
 - Tocar el árbol abre el espacio completo de Mi Balance.
 - `Registrar movimiento` y `Nueva meta` abren paneles flotantes mediante `Teleport`; no cambian de ruta.
+- Esos paneles (y los formularios compactos del detalle) usan campos cortos al lado de su pregunta, tipografía más contenida y el prefijo `$` en Meta, Monto e ingreso base.
 - Guardar un gasto actualiza el cerezo inmediatamente.
 - Los paneles se cierran con el botón, `Escape` o el fondo y se muestran por encima de la navegación móvil.
+- El detalle de Mi Balance se divide en pestañas centradas **Mi Balance** / **Lo que construyo**, del mismo tamaño. **Lo que construyo** es un compositor denso (nombre, meta, color y crear) y un listado compacto de Darumas con aporte en la misma fila.
+- El ingreso base se suma a **Lo que tengo hoy**. Se edita con el lápiz a la derecha del campo corto y confirma con «Guardado».
+- Entra / Sale del detalle abre el formulario de movimiento; los campos permanecen plegados hasta elegir.
 - Se conserva el historial y las metas Daruma existentes.
 - Mi Balance admite ingreso base y movimientos fijos mensuales; las ramas reflejan el peso relativo de las categorías.
 - Los Darumas muestran colores con significado, reciben aportes y, al completarse, pueden enviarse voluntariamente a Edad Dorada sin texto ni datos financieros.
@@ -257,10 +263,11 @@ Submundos destacados:
 
 - La portada no repite el título grande `Edad Dorada`; conserva el nombre en la navegación y un encabezado semántico oculto para accesibilidad.
 - El Daruma de kintsugi reemplaza la antigua esfera rosada.
-- El Daruma es el acceso principal y también permite declarar desde la portada.
+- El Daruma es el acceso principal: tocar la figura abre el detalle. Debajo de **¿Qué reconoces hoy?** aparece la indicación **Toca el daruma para contemplar sus grietas**; no cubre la figura ni es un segundo botón.
+- Declarar ocurre solo en la portada (**¿Qué reconoces hoy?**). El detalle conserva el Daruma con grietas y las frases de presencia **debajo** de la figura; no repite el formulario.
 - Cada declaración crea una grieta dorada accesible.
 - La grieta seleccionada revela su significado sin abandonar la composición.
-- El detalle no repite el título visible ni el sigilo circular; el Daruma, las grietas y la declaración son el espacio contemplativo. No hay botón “Contemplar mi Daruma” ni un modo que oculte la navegación.
+- El detalle no repite el título visible ni el sigilo circular; el Daruma y las grietas son el espacio contemplativo. No hay un segundo botón de contemplar ni un modo que oculte la navegación.
 - El color zodiacal aparece como capa sobre la identidad base.
 
 ## Modelo de datos local
@@ -289,7 +296,7 @@ Colecciones sincronizables:
 Datos deliberadamente locales incluyen:
 
 - `nucleo_pensamientos` y cualquier clave cuyo nombre empiece por `nucleo`.
-- `balance_oculto`, preferencias visuales y estado de sesión.
+- `balance_oculto`, `umbral_lumen`, preferencias visuales y estado de sesión.
 - La sesión de acceso local en `aureo_local_session`; se crea una vez por dispositivo y no contiene correo.
 - `device_secret`.
 - La selección del eje Tailwind en `sessionStorage` (`aureo_tailwind_axis`).

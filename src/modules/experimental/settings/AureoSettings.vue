@@ -101,28 +101,31 @@ async function wipe() {
 </template>
 
 <style scoped>
-.settings-layer { position: fixed; z-index: 75; inset: 0; display: grid; align-items: end; justify-items: center; padding: 1rem; background: rgba(4, 6, 10, .55); }
-.settings-sheet { position: relative; width: min(100%, 28rem); max-height: min(88svh, 42rem); display: grid; grid-template-rows: auto minmax(0, 1fr) auto; overflow: hidden; border: 1px solid rgba(201,168,106,.28); border-radius: 1.7rem 1.2rem 2.2rem 1.2rem / 1.3rem 1.8rem 1.1rem 1.8rem; background: linear-gradient(160deg, rgba(18,24,36,.97), rgba(8,11,17,.96)); box-shadow: 0 24px 70px rgba(0,0,0,.48); }
-.settings-sheet header { display: flex; justify-content: space-between; gap: 1rem; padding: 1.2rem 1.2rem .8rem; }
-.settings-sheet h2 { margin: 0; color: #f4efe5; font: 300 1.55rem/1.1 Fraunces, 'Aureo Serif', Georgia, serif; }
-.settings-sheet header p { margin: .35rem 0 0; color: #c9a86a; font: 300 .9rem/1 Spectral, 'Aureo Serif', Georgia, serif; }
-.settings-sheet header > button { width: 44px; height: 44px; border: 0; background: transparent; color: #d8d1c6; cursor: pointer; }
-.settings-scroll { overflow: auto; padding: 0 1.2rem 1.4rem; display: grid; gap: 1.15rem; }
-.settings-scroll::after { content: ''; position: sticky; bottom: 0; display: block; height: 1.6rem; margin: 0 -1.2rem -1.4rem; pointer-events: none; background: linear-gradient(transparent, #080b11); }
-.settings-sheet h3 { margin: 0 0 .55rem; color: #ead6a7; font: 300 1.05rem/1.2 Fraunces, 'Aureo Serif', Georgia, serif; }
-.settings-sheet p { margin: 0; color: #d8d1c6; font: 300 .92rem/1.55 Spectral, 'Aureo Serif', Georgia, serif; }
-.promise { padding: 1rem 1rem 1.1rem; border: 1px solid rgba(201,168,106,.22); border-radius: 1.2rem; }
-.gold { margin-top: .8rem !important; color: #c9a86a !important; }
-.space-toggle { display: flex; align-items: center; justify-content: space-between; gap: 1rem; width: 100%; min-height: 52px; padding: .7rem 0; border: 0; border-top: 1px solid rgba(201,168,106,.16); background: transparent; color: inherit; text-align: left; cursor: pointer; }
-.space-toggle strong { display: block; font: 300 1rem/1.2 Fraunces, 'Aureo Serif', Georgia, serif; color: #f4efe5; }
-.space-toggle small { display: block; margin-top: .2rem; color: #b9b3aa; font: 300 .82rem/1.35 Spectral, 'Aureo Serif', Georgia, serif; }
-.dot { width: .85rem; height: .85rem; border: 1px solid rgba(201,168,106,.4); border-radius: 50%; }
+.settings-layer { position: fixed; z-index: 75; inset: 0; display: grid; align-items: end; justify-items: center; padding: .75rem; background: rgba(4, 6, 10, .62); }
+.settings-sheet { position: relative; width: min(100%, 23.5rem); max-height: min(82svh, 32rem); display: grid; grid-template-rows: auto minmax(0, 1fr) auto; overflow: hidden; border: 1px solid rgba(201,168,106,.3); border-radius: 1.05rem .85rem 1.25rem .9rem; background: radial-gradient(circle at 92% 0, rgba(201,168,106,.1), transparent 32%), #0d121b; box-shadow: 0 24px 70px rgba(0,0,0,.55); }
+.settings-sheet::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 1px; background: linear-gradient(transparent, #c9a86a, transparent); }
+.settings-sheet header { display: flex; align-items: flex-start; justify-content: space-between; gap: .5rem; padding: .65rem .8rem .35rem; }
+.settings-sheet h2 { margin: 0; color: #f4efe5; font: 300 1.02rem/1.15 Fraunces, 'Aureo Serif', Georgia, serif; letter-spacing: -.02em; }
+.settings-sheet header p { margin: .06rem 0 0; color: #c9a86a; font: 300 .7rem/1.15 Spectral, 'Aureo Serif', Georgia, serif; }
+.settings-sheet header > button { display: grid; width: 44px; height: 44px; flex: 0 0 auto; place-items: center; margin: -.4rem -.4rem 0 0; border: 0; background: transparent; color: #d8d1c6; cursor: pointer; }
+.settings-sheet header > button svg { width: .92rem; }
+.settings-sheet :is(button):focus-visible { outline: 2px solid #ead6a7; outline-offset: 2px; }
+.settings-scroll { overflow: auto; padding: 0 .8rem .8rem; display: grid; gap: .45rem; }
+.settings-sheet h3 { margin: 0 0 .15rem; color: #ead6a7; font: 300 .72rem/1.15 Fraunces, 'Aureo Serif', Georgia, serif; }
+.settings-sheet p { margin: 0; color: #d8d1c6; font: 300 .74rem/1.32 Spectral, 'Aureo Serif', Georgia, serif; }
+.promise { padding: .48rem .58rem .5rem; border: 1px solid rgba(201,168,106,.2); border-radius: .7rem .55rem .85rem .6rem; background: rgba(7,11,17,.45); }
+.promise h3 { margin: 0 0 .2rem; }
+.gold { margin-top: .28rem !important; color: #c9a86a !important; font-style: italic; font-size: .76rem; }
+.space-toggle { display: flex; align-items: center; justify-content: space-between; gap: .55rem; width: 100%; min-height: 44px; padding: .22rem 0; border: 0; border-top: 1px solid rgba(201,168,106,.16); background: transparent; color: inherit; text-align: left; cursor: pointer; }
+.space-toggle strong { display: block; font: 300 .84rem/1.15 Fraunces, 'Aureo Serif', Georgia, serif; color: #f4efe5; }
+.space-toggle small { display: block; margin-top: .08rem; color: #b9b3aa; font: 300 .68rem/1.25 Spectral, 'Aureo Serif', Georgia, serif; }
+.dot { width: .68rem; height: .68rem; flex: 0 0 auto; border: 1px solid rgba(201,168,106,.4); border-radius: 50%; }
 .dot.on { background: #c9a86a; box-shadow: 0 0 10px rgba(201,168,106,.45); }
-.actions { display: grid; grid-template-columns: 1fr 1fr; gap: .55rem; margin-top: .85rem; }
-.actions button, .danger { min-height: 44px; border: 1px solid #c9a86a; border-radius: 999px; background: rgba(201,168,106,.12); color: #ead6a7; font: 300 .88rem/1 Fraunces, 'Aureo Serif', Georgia, serif; cursor: pointer; }
+.actions { display: grid; grid-template-columns: 1fr 1fr; gap: .35rem; margin-top: .35rem; }
+.actions button, .danger { min-height: 44px; border: 1px solid #c9a86a; border-radius: 999px; background: rgba(201,168,106,.12); color: #ead6a7; font: 300 .76rem/1 Fraunces, 'Aureo Serif', Georgia, serif; cursor: pointer; }
 .quiet { background: transparent; }
-.danger { width: 100%; margin-top: .65rem; border-color: rgba(184,109,93,.7); background: transparent; color: #f2aaa0; }
-.notice { margin: 0; padding: .7rem 1.2rem 1rem; color: #ead6a7; font: 300 .88rem/1.3 Spectral, 'Aureo Serif', Georgia, serif; }
+.danger { width: 100%; margin-top: .3rem; border-color: rgba(184,109,93,.7); background: transparent; color: #f2aaa0; }
+.notice { margin: 0; padding: .35rem .8rem .65rem; color: #ead6a7; font: 300 .74rem/1.25 Spectral, 'Aureo Serif', Georgia, serif; }
 @media (min-width: 1024px) {
   .settings-layer { align-items: center; }
 }

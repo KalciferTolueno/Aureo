@@ -1,6 +1,6 @@
 # Decisiones confirmadas por la clienta — Áureo
 
-Última consolidación: 31 de agosto de 2026.
+Última consolidación: 3 de septiembre de 2026.
 
 Esta es la referencia rápida para desarrolladores y asistentes de IA. Resume decisiones confirmadas; ante dudas se debe consultar también la especificación completa del eje.
 
@@ -42,13 +42,13 @@ Esta es la referencia rápida para desarrolladores y asistentes de IA. Resume de
 ## Eje 1 — Umbral
 
 - Es el inicio del día; no es un calendario ni una lista tipo Google Tasks.
-- El saludo usa *El día es tuyo / La tarde es tuya / La noche es tuya*, centrado, con fecha de solo día + número y una máxima filosófica rotatoria.
+- El saludo usa *El día es tuyo / La tarde es tuya / La noche es tuya*, centrado en la misma fila que la fecha (izquierda) y el selector ☉/☾ (derecha), con una máxima filosófica rotatoria debajo.
 - Palabra de poder se muestra como **Tu sello**.
 - La carta abierta incluye la frase editorial del arcano en oro cursiva.
-- El **Número** flota a la derecha de la luna; el **Arcano** permanece a la izquierda.
-- La luz de Umbral permanece siempre encendida. No hay selector ☉/☾; el fondo permanece `#080B11`.
+- El **Arcano** flota a la derecha de la luna y el **Número** a la izquierda, a la altura del centro del Arcano, sin tapar la tira de fases.
+- En la cabecera de Umbral, la fecha queda a la izquierda, el saludo al centro y el selector ☉/☾ a la derecha, todos a la misma altura. Cambia solo la luminosidad; el fondo permanece `#080B11` en ambos modos. Sin elección, sigue la hora del sistema.
 - La portada se llama **Carta del día** y muestra la tira completa de 8 fases lunares SVG.
-- El arcano diario se conserva y se acumula en un mazo histórico consultable.
+- El arcano diario se conserva y se acumula en un mazo histórico consultable. **Abrir el mazo** abre una ventana flotante; en **Tu mazo diario** se muestran únicamente los últimos 7 días (fecha + nombre); el resto permanece guardado y no se borra.
 - El signo del día es universal, no el signo natal.
 - M4 se llama **Lo que tengo en mente hoy**.
 - El botón de guardar solo aparece cuando existe texto.
@@ -57,7 +57,7 @@ Esta es la referencia rápida para desarrolladores y asistentes de IA. Resume de
 - Incluye **Mi pulso de hoy** en la portada de Umbral, con pregunta diaria y respuesta libre. El registro viaja silenciosamente a Edad Dorada, sin feedback visible en Umbral.
 - Cultivo y Destellos dejan de mostrarse, pero sus datos se preservan.
 - El símbolo de marca Luna + espiral Fibonacci sigue vigente.
-- Existe captura rápida global para guardar algo para hoy o después; nunca aparece dentro de Núcleo.
+- Existe captura rápida global para guardar algo para hoy o después; nunca aparece dentro de Núcleo. En **Un destello**, el campo va en una caja y **Sellar** permanece visible.
 
 ## Eje 2 — Mundos
 
@@ -109,6 +109,10 @@ Esta es la referencia rápida para desarrolladores y asistentes de IA. Resume de
 - En la portada, “Lo que tengo hoy” y el saldo van encima del bonsái, sin recuadro circular. “Cada gasto abre una flor.” aparece debajo de Registrar movimiento y Nueva meta. No se muestra la frase vacía “Tu cerezo espera su primera flor.”
 - El bonsái aparece solo en la portada. La vista funcional no repite el árbol ni sus flores; los gastos se consultan en “Últimos movimientos”.
 - Admite ingreso base y la marca de movimientos fijos mensuales.
+- En meta y movimiento, los campos cortos van al lado de su pregunta. Meta, monto e ingreso base muestran el signo `$`.
+- El ingreso base forma parte de **Lo que tengo hoy**. Se edita con el ícono a la derecha del campo corto; al guardar confirma con «Guardado».
+- El detalle de Mi Balance se divide en pestañas centradas **Mi Balance** (flujo) y **Lo que construyo** (Darumas), con el mismo tamaño. Lo que construyo se presenta como herramienta compacta: crear una meta y ver las existentes, sin inflar el formulario.
+- En el detalle, Entra / Sale abre el formulario de movimiento; los campos no quedan expuestos de antemano.
 - Cada Daruma admite aportes hasta completar su objetivo y comunica el significado de su color.
 - Debe generar claridad, nunca ansiedad o juicio.
 - Un Daruma completado puede enviarse voluntariamente a Edad Dorada.
@@ -139,7 +143,7 @@ Esta es la referencia rápida para desarrolladores y asistentes de IA. Resume de
 - Declaración libre, sin categorías ni límite.
 - Un nodo nuevo nace en el centro y desplaza los anteriores hacia afuera.
 - Toque: pulso de luz. Pulsación larga: muestra temporalmente el texto.
-- El detalle de Edad Dorada es el espacio contemplativo: Daruma, grietas y declaración, con Volver. No hay un segundo botón “Contemplar mi Daruma” ni un modo que retire la navegación.
+- El detalle de Edad Dorada es el espacio contemplativo: Daruma, grietas y las frases de presencia debajo de la figura, con Volver. Declarar se hace en la portada. La indicación “Toca el daruma para contemplar sus grietas” vive debajo de ¿Qué reconoces hoy?; no hay un segundo botón ni un modo que retire la navegación.
 - El detalle no repite el título visible “Edad Dorada” ni el sigilo circular del encabezado; el nombre permanece en la navegación y como encabezado semántico oculto.
 - Los ejes no se mezclan automáticamente. Los envíos admitidos deben respetar los gestos voluntarios documentados.
 

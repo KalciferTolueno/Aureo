@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { arcanaPhrase, dailyPulsePrompt, greetingForHour, LUNAR_PHASES, lunarPhaseIndex, lumenFromHour, MAXIMS, nextMaximIndex, PULSE_PROMPTS } from './umbral'
+import { arcanaPhrase, dailyPulsePrompt, greetingForHour, LUNAR_PHASES, lunarPhaseIndex, lumenFromHour, MAXIMS, nextMaximIndex, PULSE_PROMPTS, recentDailyArcana, resolveLumen } from './umbral'
 
 describe('ritmo diario de Umbral', () => {
   it('elige una pregunta estable para cada fecha', () => {
@@ -38,5 +38,38 @@ describe('ritmo diario de Umbral', () => {
     expect(lumenFromHour(19)).toBe('dia')
     expect(lumenFromHour(20)).toBe('noche')
     expect(lumenFromHour(5)).toBe('noche')
+  })
+
+  it('respeta el selector de Umbral y, en automático, sigue la hora', () => {
+    expect(resolveLumen('dia', 23)).toBe('dia')
+    expect(resolveLumen('noche', 10)).toBe('noche')
+    expect(resolveLumen('auto', 10)).toBe('dia')
+    expect(resolveLumen(null, 22)).toBe('noche')
+  })
+
+  it('muestra solo los últimos 7 días del mazo y conserva el resto fuera de la lista', () => {
+    const items = [
+      { fecha: '2026-08-20', nombre: 'El Loco' },
+      { fecha: '2026-09-01', nombre: 'El Mago' },
+      { fecha: '2026-08-28', nombre: 'La Torre' },
+      { fecha: '2026-08-29', nombre: 'La Estrella' },
+      { fecha: '2026-08-30', nombre: 'La Luna' },
+      { fecha: '2026-08-31', nombre: 'El Sol' },
+      { fecha: '2026-09-02', nombre: 'El Juicio' },
+      { fecha: '2026-09-03', nombre: 'El Mundo' },
+      { fecha: '2026-08-27', nombre: 'La Rueda' },
+    ]
+    const visible = recentDailyArcana(items)
+    expect(visible).toHaveLength(7)
+    expect(visible.map((item) => item.fecha)).toEqual([
+      '2026-09-03',
+      '2026-09-02',
+      '2026-09-01',
+      '2026-08-31',
+      '2026-08-30',
+      '2026-08-29',
+      '2026-08-28',
+    ])
+    expect(visible.some((item) => item.nombre === 'El Loco')).toBe(false)
   })
 })

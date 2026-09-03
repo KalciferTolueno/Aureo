@@ -304,24 +304,55 @@ function journeyPick(coords: { lat: number; lng: number }) {
   void reverseJourneyCoordinates(coords.lat, coords.lng)
 }
 
-const balanceMode = ref<'overview' | 'movement' | 'goal'>('overview')
+const balancePane = ref<'flujo' | 'metas'>('flujo')
 const baseIncome = ref(0)
+const baseIncomeEditing = ref(false)
+const baseIncomeField = ref<HTMLInputElement | null>(null)
+const baseIncomeSaved = ref(false)
+let baseIncomeSavedTimer = 0
+const movementOpen = ref(false)
 const movement = reactive({ tipo: 'gasto' as 'ingreso' | 'gasto', monto: 0, categoria: 'El nido', nota: '', recurrente: false })
 const goal = reactive({ nombre: '', objetivo: 0, color: '#C9A86A' })
 const categories = ['El nido', 'El cuerpo', 'El movimiento', 'El cuidado', 'Lo inesperado', 'Lo que construyo']
 const goalColors = [{ name: 'Suerte y fuerza', value: '#C0392B' }, { name: 'Dinero y prosperidad', value: '#C9A86A' }, { name: 'Nuevo comienzo', value: '#F5F0E6' }, { name: 'Crecimiento personal', value: '#9B7D9B' }, { name: 'Salud y bienestar', value: '#7D9B8A' }, { name: 'Trabajo y logros', value: '#5B8DB8' }, { name: 'Protección', value: '#2C2C2C' }, { name: 'Amor y cuidado propio', value: '#D4849A' }]
 const currency = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 })
-async function saveBaseIncome() { await storage.set('balance_ingreso_base', Math.max(0, baseIncome.value)); emit('changed') }
+async function startBaseIncomeEdit() {
+  baseIncomeEditing.value = true
+  await nextTick()
+  baseIncomeField.value?.focus()
+  baseIncomeField.value?.select()
+}
+async function saveBaseIncome() {
+  const amount = Number.isFinite(Number(baseIncome.value)) ? Math.max(0, Number(baseIncome.value)) : 0
+  baseIncome.value = amount
+  await storage.set('balance_ingreso_base', amount)
+  emit('changed')
+  baseIncomeEditing.value = false
+  baseIncomeSaved.value = true
+  window.clearTimeout(baseIncomeSavedTimer)
+  baseIncomeSavedTimer = window.setTimeout(() => { baseIncomeSaved.value = false }, 2200)
+}
+async function onBaseIncomeAction() {
+  if (!baseIncomeEditing.value) {
+    await startBaseIncomeEdit()
+    return
+  }
+  await saveBaseIncome()
+}
+function openMovement(tipo: 'ingreso' | 'gasto') {
+  movement.tipo = tipo
+  movementOpen.value = true
+}
 async function addMovement() {
-  if (movement.monto <= 0) return
+  if (!movementOpen.value || movement.monto <= 0) return
   const now = new Date().toISOString()
   await movements.add({ ...movement, fecha: now, fecha_creacion: now })
-  movement.monto = 0; movement.nota = ''; balanceMode.value = 'overview'; emit('changed')
+  movement.monto = 0; movement.nota = ''; movementOpen.value = false; emit('changed')
 }
 async function addGoal() {
   if (!goal.nombre.trim() || goal.objetivo <= 0) return
   await darumas.add({ nombre: goal.nombre.trim(), objetivo: goal.objetivo, acumulado: 0, color: goal.color, daruma_transferido: false, fecha_creacion: new Date().toISOString() })
-  goal.nombre = ''; goal.objetivo = 0; balanceMode.value = 'overview'; emit('changed')
+  goal.nombre = ''; goal.objetivo = 0; emit('changed')
 }
 const darumaContribution = reactive<Record<string, number>>({})
 async function addDarumaProgress(item: Daruma) {
@@ -400,7 +431,6 @@ async function addThought() {
 }
 function thoughtDate(value: string) { return new Intl.DateTimeFormat('es-CL', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(value)) }
 
-const declarationText = ref('')
 const selectedDeclaration = ref<string | null>(null)
 const currentDeclaration = computed(() => declarations.items.value.find((item) => item.id === selectedDeclaration.value) ?? null)
 const selectedCrack = computed(() => goldenCracks.value.find((crack) => crack.declaration.id === selectedDeclaration.value) ?? null)
@@ -419,11 +449,6 @@ function goldenDeclarationCopy(item: GoldenDeclaration) { return item.texto?.tri
 function goldenDeclarationOrigin(item: GoldenDeclaration) { return item.origen === 'daruma_balance' ? 'Daruma cumplido' : item.origen === 'decreto_mundos' ? 'Decreto encendido' : item.origen === 'hobby_flow_total' ? 'Momento de flow' : item.origen === 'pulso_umbral' ? 'Pulso de hoy' : 'Declaración presente' }
 function goldenDeclarationDate(value: string) { return new Intl.DateTimeFormat('es-CL', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(value)) }
 function updateDarumaState() { darumaActive.value = darumaIntersecting && !document.hidden }
-async function addDeclaration() {
-  const value = declarationText.value.trim(); if (!value) return
-  const now = new Date().toISOString(); await declarations.add({ texto: value, timestamp: now, fecha_creacion: now })
-  declarationText.value = ''; selectedDeclaration.value = declarations.items.value.at(-1)?.id ?? null; emit('changed')
-}
 
 const intentionText = ref('')
 const pulseText = ref('')
@@ -458,8 +483,8 @@ watch(() => props.intentionDraft, (value) => {
   emit('draft-consumed')
 }, { immediate: true })
 
-watch(() => props.detail, () => { resetWorldForm(); selectedThought.value = null; selectedDeclaration.value = null; selectedConstellationLink.value = null })
-watch(() => props.initialAction, (action) => { balanceMode.value = action === 'movimiento' ? 'movement' : action === 'meta' ? 'goal' : 'overview' }, { immediate: true })
+watch(() => props.detail, () => { resetWorldForm(); selectedThought.value = null; selectedDeclaration.value = null; selectedConstellationLink.value = null; movementOpen.value = false; baseIncomeEditing.value = false })
+watch(() => props.initialAction, (action) => { balancePane.value = action === 'meta' ? 'metas' : 'flujo' }, { immediate: true })
 watch(thoughtCloth, (node, previous) => { if (previous) plasmaObserver?.unobserve(previous); if (node) plasmaObserver?.observe(node) })
 watch(constellationMap, (node, previous) => { if (previous) constellationObserver?.unobserve(previous); if (node) constellationObserver?.observe(node) })
 watch(darumaStage, (node, previous) => { if (previous) darumaObserver?.unobserve(previous); if (node) darumaObserver?.observe(node) })
@@ -474,7 +499,7 @@ onMounted(async () => {
   if (darumaStage.value) darumaObserver.observe(darumaStage.value)
   document.addEventListener('visibilitychange', handleVisibilityChange)
 })
-onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer); clearTimeout(decreeHoldTimer); plasmaObserver?.disconnect(); constellationObserver?.disconnect(); darumaObserver?.disconnect(); document.removeEventListener('visibilitychange', handleVisibilityChange) })
+onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer); window.clearTimeout(baseIncomeSavedTimer); clearTimeout(decreeHoldTimer); plasmaObserver?.disconnect(); constellationObserver?.disconnect(); darumaObserver?.disconnect(); document.removeEventListener('visibilitychange', handleVisibilityChange) })
 </script>
 
 <template>
@@ -482,7 +507,13 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer); clearTimeout(decr
     <span class="workspace-aura" aria-hidden="true" />
     <header class="workspace-header">
       <button type="button" class="workspace-back" :aria-label="`Volver a ${isWorld ? 'Mundos' : title}`" @click="emit('close')"><AppIcon name="back" /><span>Volver</span></button>
-      <div class="workspace-title" :class="{ 'workspace-title-quiet': detail === 'edad-dorada' }"><div><h1>{{ title }}</h1><p v-if="detail === 'nucleo'">Permanece solo en este dispositivo.</p></div></div>
+      <div class="workspace-title" :class="{ 'workspace-title-quiet': detail === 'edad-dorada' }">
+        <nav v-if="detail === 'balance'" class="workspace-panes" role="tablist" aria-label="Espacios de Mi Balance">
+          <button type="button" id="balance-tab-flujo" role="tab" aria-controls="balance-panel-flujo" :aria-selected="balancePane === 'flujo'" @click="balancePane = 'flujo'">Mi Balance</button>
+          <button type="button" id="balance-tab-metas" role="tab" aria-controls="balance-panel-metas" :aria-selected="balancePane === 'metas'" @click="balancePane = 'metas'">Lo que construyo</button>
+        </nav>
+        <div v-else><h1>{{ title }}</h1><p v-if="detail === 'nucleo'">Permanece solo en este dispositivo.</p></div>
+      </div>
     </header>
 
     <div v-if="isWorld && detail === 'world-cuidado'" class="care-mural-space">
@@ -582,21 +613,56 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer); clearTimeout(decr
     </div>
 
     <div v-else-if="detail === 'balance'" class="balance-workspace">
-      <form class="balance-base-income" @submit.prevent="saveBaseIncome"><label>Mi ingreso base<input v-model.number="baseIncome" type="number" min="0" inputmode="decimal" /></label><button class="workspace-primary" type="submit">Guardar ingreso base</button></form>
-      <form v-if="balanceMode === 'movement'" class="ritual-form compact" @submit.prevent="addMovement">
-        <div class="segmented-choice"><button type="button" :class="{ active: movement.tipo === 'ingreso' }" @click="movement.tipo = 'ingreso'">Entra</button><button type="button" :class="{ active: movement.tipo === 'gasto' }" @click="movement.tipo = 'gasto'">Sale</button></div>
-        <label>Monto<input v-model.number="movement.monto" type="number" min="1" inputmode="decimal" required /></label>
-        <label>Categoría<select v-model="movement.categoria"><option v-for="category in categories" :key="category">{{ category }}</option></select></label>
-        <label>Una nota, si la necesitas<input v-model="movement.nota" maxlength="160" /></label>
-        <label class="balance-recurring"><input v-model="movement.recurrente" type="checkbox" /> Es un movimiento fijo mensual</label>
-        <button class="workspace-primary" type="submit" :disabled="movement.monto <= 0">Guardar</button>
-      </form>
-      <form v-else-if="balanceMode === 'goal'" class="ritual-form compact" @submit.prevent="addGoal">
-        <label>¿Qué estás construyendo?<input v-model="goal.nombre" required maxlength="120" /></label><label>Meta<input v-model.number="goal.objetivo" type="number" min="1" required /></label>
-        <fieldset class="goal-colors"><legend>Color de tu Daruma</legend><button v-for="color in goalColors" :key="color.value" type="button" :style="{ background: color.value }" :class="{ selected: goal.color === color.value }" :aria-label="color.name" :title="color.name" @click="goal.color = color.value" /></fieldset>
-        <button class="workspace-primary" type="submit" :disabled="!goal.nombre.trim() || goal.objetivo <= 0">Crear Daruma</button>
-      </form>
-      <div class="balance-lists"><section><h2>Últimos movimientos</h2><article v-for="item in [...movements.items.value].reverse().slice(0,8)" :key="item.id" class="workspace-record"><div><h3>{{ item.nota || item.categoria }}</h3><p>{{ item.categoria }}<template v-if="item.recurrente"> · fijo mensual</template></p></div><strong>{{ item.tipo === 'ingreso' ? '+' : '−' }} {{ currency.format(item.monto) }}</strong></article><p v-if="!movements.items.value.length" class="workspace-empty">Sin registros aún. Ver es la primera forma de cuidarte.</p></section><section><h2>Lo que construyo</h2><article v-for="item in darumas.items.value" :key="item.id" class="workspace-record daruma"><span :style="{ background: item.color }" /><div><h3>{{ item.nombre }}</h3><p>{{ currency.format(item.acumulado) }} de {{ currency.format(item.objetivo) }}</p><form v-if="item.acumulado < item.objetivo" class="daruma-progress" @submit.prevent="addDarumaProgress(item)"><input v-model.number="darumaContribution[item.id]" type="number" min="1" :max="item.objetivo - item.acumulado" aria-label="Aportar a la meta" /><button type="submit">Aportar</button></form><button v-else-if="!item.daruma_transferido" type="button" class="daruma-transfer" @click="transferDaruma(item)"><AppIcon name="star" /> Llevar a Edad Dorada</button><small v-else>Ya forma parte de tu Edad Dorada.</small></div></article><p v-if="!darumas.items.value.length" class="workspace-empty">Lo que todavía no nombraste, aquí puede tomar forma.</p></section></div>
+      <div v-if="balancePane === 'flujo'" id="balance-panel-flujo" class="balance-pane" role="tabpanel" aria-labelledby="balance-tab-flujo">
+        <form class="balance-base-income" @submit.prevent="onBaseIncomeAction">
+          <label for="balance-base-income">Mi ingreso base</label>
+          <div class="balance-base-row">
+            <span class="balance-money-field">
+              <span class="balance-money-sign" aria-hidden="true">$</span>
+              <input id="balance-base-income" ref="baseIncomeField" v-model.number="baseIncome" type="number" min="0" inputmode="decimal" :readonly="!baseIncomeEditing" @focus="baseIncomeEditing || startBaseIncomeEdit()" />
+            </span>
+            <button type="submit" class="balance-base-edit" :aria-label="baseIncomeEditing ? 'Guardar ingreso base' : 'Editar ingreso base'"><AppIcon name="edit" /></button>
+          </div>
+          <p v-if="baseIncomeSaved" class="balance-base-saved" role="status">Guardado</p>
+        </form>
+        <form class="ritual-form compact" :class="{ open: movementOpen }" @submit.prevent="addMovement">
+          <div class="segmented-choice" role="group" aria-label="¿Cómo se mueve?">
+            <button type="button" :class="{ active: movementOpen && movement.tipo === 'ingreso' }" @click="openMovement('ingreso')">Entra</button>
+            <button type="button" :class="{ active: movementOpen && movement.tipo === 'gasto' }" @click="openMovement('gasto')">Sale</button>
+          </div>
+          <template v-if="movementOpen">
+            <label>Monto<span class="balance-money-field"><span class="balance-money-sign" aria-hidden="true">$</span><input v-model.number="movement.monto" type="number" min="1" inputmode="decimal" required /></span></label>
+            <label>Categoría<select v-model="movement.categoria"><option v-for="category in categories" :key="category">{{ category }}</option></select></label>
+            <label>Una nota, si la necesitas<input v-model="movement.nota" maxlength="160" /></label>
+            <label class="balance-recurring"><input v-model="movement.recurrente" type="checkbox" /> Es un movimiento fijo mensual</label>
+            <button class="workspace-primary" type="submit" :disabled="movement.monto <= 0">Guardar</button>
+          </template>
+        </form>
+        <section class="balance-lists"><h2>Últimos movimientos</h2><article v-for="item in [...movements.items.value].reverse().slice(0,8)" :key="item.id" class="workspace-record"><div><h3>{{ item.nota || item.categoria }}</h3><p>{{ item.categoria }}<template v-if="item.recurrente"> · fijo mensual</template></p></div><strong>{{ item.tipo === 'ingreso' ? '+' : '−' }} {{ currency.format(item.monto) }}</strong></article><p v-if="!movements.items.value.length" class="workspace-empty">Sin registros aún. Ver es la primera forma de cuidarte.</p></section>
+      </div>
+      <div v-else id="balance-panel-metas" class="balance-pane" role="tabpanel" aria-labelledby="balance-tab-metas">
+        <form class="ritual-form compact goal-composer" @submit.prevent="addGoal">
+          <label class="goal-row">¿Qué estás construyendo?<input v-model="goal.nombre" required maxlength="120" /></label>
+          <label class="goal-row">Meta<span class="balance-money-field"><span class="balance-money-sign" aria-hidden="true">$</span><input v-model.number="goal.objetivo" type="number" min="1" required /></span></label>
+          <div class="goal-row" role="group" aria-labelledby="goal-color-label">
+            <span id="goal-color-label">Color de tu Daruma</span>
+            <div class="goal-swatches">
+              <button v-for="color in goalColors" :key="color.value" type="button" :style="{ background: color.value }" :class="{ selected: goal.color === color.value }" :aria-label="color.name" :title="color.name" @click="goal.color = color.value" />
+            </div>
+          </div>
+          <button class="workspace-primary" type="submit" :disabled="!goal.nombre.trim() || goal.objetivo <= 0">Crear Daruma</button>
+        </form>
+        <section class="balance-lists goal-ledger">
+          <article v-for="item in darumas.items.value" :key="item.id" class="workspace-record daruma">
+            <span :style="{ background: item.color }" />
+            <div class="daruma-copy"><h3>{{ item.nombre }}</h3><p>{{ currency.format(item.acumulado) }} de {{ currency.format(item.objetivo) }}</p></div>
+            <form v-if="item.acumulado < item.objetivo" class="daruma-progress" @submit.prevent="addDarumaProgress(item)"><input v-model.number="darumaContribution[item.id]" type="number" min="1" :max="item.objetivo - item.acumulado" aria-label="Aportar a la meta" /><button type="submit">Aportar</button></form>
+            <button v-else-if="!item.daruma_transferido" type="button" class="daruma-transfer" @click="transferDaruma(item)"><AppIcon name="star" /> Llevar a Edad Dorada</button>
+            <small v-else>Ya forma parte de tu Edad Dorada.</small>
+          </article>
+          <p v-if="!darumas.items.value.length" class="workspace-empty">Lo que todavía no nombraste, aquí puede tomar forma.</p>
+        </section>
+      </div>
     </div>
 
     <div v-else-if="detail === 'nucleo'" class="nucleus-workspace">
@@ -673,7 +739,6 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer); clearTimeout(decr
         </div>
         <div class="golden-practice">
           <p class="golden-copy"><strong>Tu Edad Dorada ya está ocurriendo.</strong><span>No es después. Es este momento, revelado bajo la luz del oro.</span></p>
-          <form class="golden-entry" @submit.prevent="addDeclaration"><label for="tailwind-declaration">¿Qué reconoces hoy?</label><textarea id="tailwind-declaration" v-model="declarationText" rows="2" maxlength="1200" placeholder="Declara este momento…" /><button v-if="declarationText.trim()" class="workspace-primary" type="submit">Formar una grieta</button></form>
         </div>
       </div>
     </div>
@@ -689,7 +754,7 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer); clearTimeout(decr
         <header class="umbral-ritual-title"><span aria-hidden="true"><AppIcon name="sun" /></span><h2>Mi pulso de hoy</h2></header>
         <p class="umbral-prompt">{{ dailyPrompt }}</p>
         <blockquote v-if="todayPulse">{{ todayPulse.respuesta }}</blockquote>
-        <form class="ritual-form compact umbral-capture" @submit.prevent="savePulse"><label>Respuesta a mi pulso de hoy<textarea v-model="pulseText" rows="4" maxlength="1200" placeholder="una palabra, una imagen, una sensación..." /></label><button v-if="pulseText.trim()" class="workspace-primary" type="submit">{{ todayPulse ? 'Actualizar pulso' : 'Guardar pulso' }}</button></form>
+        <form class="ritual-form compact umbral-capture" @submit.prevent="savePulse"><label>Respuesta a mi pulso de hoy<textarea v-model="pulseText" rows="2" maxlength="1200" placeholder="una palabra, una imagen, una sensación..." /></label><button v-if="pulseText.trim()" class="workspace-primary" type="submit">{{ todayPulse ? 'Actualizar pulso' : 'Guardar pulso' }}</button></form>
       </section>
     </div>
   </section>
@@ -779,18 +844,13 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer); clearTimeout(decr
 .detail-edad-dorada .golden-selected-copy{display:block;margin:.85rem 0 0;color:#f4efe5;font-size:1.06rem;font-style:normal;line-height:1.65;text-align:left}
 .golden-reading-enter-active,.golden-reading-leave-active{transition:opacity 180ms ease,filter 260ms ease,transform 340ms cubic-bezier(.16,1,.3,1)}.golden-reading-enter-from,.golden-reading-leave-to{opacity:0;filter:blur(4px);transform:translateY(.8rem) scale(.97)}
 .golden-practice{min-width:0}
-.detail-edad-dorada .golden-copy{margin:0 0 .85rem;text-align:left}
+.detail-edad-dorada .golden-copy{margin:0;text-align:left}
 .detail-edad-dorada .golden-copy strong{display:block;color:#ead6a7;font-size:clamp(1.25rem,2.4vw,1.7rem);font-weight:300;line-height:1.08}
 .detail-edad-dorada .golden-copy span{display:block;max-width:29rem;margin-top:.4rem;color:#c9c1b5;font-size:.95rem;font-style:italic;line-height:1.5}
-.detail-edad-dorada .golden-entry{width:100%;max-width:none;margin:0;gap:.75rem}
-.detail-edad-dorada .golden-entry label{color:#b9b3aa;letter-spacing:.04em;text-transform:uppercase}
-.detail-edad-dorada .golden-entry textarea{min-height:5.25rem;padding:.9rem .15rem;border:0;border-bottom:1px solid rgba(201,168,106,.34);border-radius:0;background:transparent;font-family:Georgia,'Times New Roman',serif;font-size:1.12rem;letter-spacing:0;text-transform:none}
-.detail-edad-dorada .golden-entry textarea:focus-visible{outline:0;border-bottom-color:#ead6a7;background:linear-gradient(180deg,transparent,rgba(201,168,106,.035));box-shadow:0 14px 24px -22px rgba(234,214,167,.75)}
-.detail-edad-dorada .golden-entry .workspace-primary{justify-self:end;width:auto;min-width:11rem;margin-top:.2rem;border-radius:14px;clip-path:none}
 @keyframes daruma-presence{0%,100%{filter:brightness(.94) drop-shadow(0 12px 24px rgba(0,0,0,.18))}50%{filter:brightness(1.06) drop-shadow(0 18px 34px color-mix(in srgb,var(--sign-color) 12%,transparent))}}
 @keyframes daruma-crack-form{from{stroke-dashoffset:280;opacity:.15;filter:blur(2px)}to{stroke-dashoffset:0;opacity:1;filter:url(#golden-glow)}}
 @keyframes daruma-gold-current{0%,100%{opacity:.25}50%{opacity:.58}}
-@media(max-width:760px){.golden-presence{grid-template-columns:minmax(0,1fr);gap:1.2rem}.detail-edad-dorada .daruma-stage{width:min(100%,34rem)}.golden-practice{margin-top:.8rem}.detail-edad-dorada .golden-copy{text-align:center}.detail-edad-dorada .golden-copy span{margin-inline:auto}.detail-edad-dorada .golden-entry .workspace-primary{width:100%}}
+@media(max-width:760px){.golden-presence{grid-template-columns:minmax(0,1fr);justify-items:center;gap:.4rem}.golden-object-column{order:1;width:100%}.golden-practice{order:2;width:100%;margin-top:.1rem}.detail-edad-dorada .daruma-stage{width:min(78vw,21rem);margin-top:0}.detail-edad-dorada .golden-copy{text-align:center}.detail-edad-dorada .golden-copy span{margin-inline:auto}}
 @media(max-width:380px){.detail-edad-dorada .daruma-stage{width:calc(100vw - 2.5rem)}.daruma-empty{font-size:.88rem}}
 @media(prefers-reduced-motion:reduce){.daruma-form,.daruma-crack-line,.daruma-crack-glow{animation:none}.golden-reading-enter-active,.golden-reading-leave-active{transition-duration:120ms}}
 /* Mi Constelación: cada vínculo ocupa el anillo confirmado por la clienta. */
@@ -834,28 +894,29 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer); clearTimeout(decr
 @media(max-width:380px){.constellation-legend{display:grid}.constellation-map{width:calc(100vw - 2.5rem)}}
 @media(prefers-reduced-motion:reduce){.constellation-orbit,.constellation-star>span,.constellation-thread{animation:none}.constellation-reading-enter-active.constellation-reading,.constellation-reading-leave-active.constellation-reading{transition-duration:120ms}}
 /* Umbral se comporta como una experiencia continua de aplicación, no como una página de formularios. */
-.detail-umbral .workspace-header h1{font-size:clamp(1.7rem,4vw,2.35rem)}
-.detail-umbral .umbral-workspace{display:block;width:min(100%,46rem);margin-inline:auto}
+.detail-umbral .workspace-header h1{font-size:clamp(1.35rem,3.4vw,1.85rem)}
+.detail-umbral .umbral-workspace{display:grid;gap:.55rem;width:min(100%,46rem);margin-inline:auto}
 .detail-umbral .umbral-workspace::before{top:20rem;width:38rem;opacity:.72}
-.detail-umbral .umbral-ritual{position:relative;padding:.7rem 0 1.15rem}
-.detail-umbral .umbral-ritual+.umbral-ritual{padding-top:1.15rem;border-top:1px solid rgba(201,168,106,.18)}
-.detail-umbral .umbral-ritual-title{display:flex;align-items:center;gap:.9rem}
-.detail-umbral .umbral-ritual-title>span{display:grid;width:44px;aspect-ratio:1;flex:0 0 auto;place-items:center;border:1px solid rgba(201,168,106,.4);border-radius:50%;color:#ead6a7;background:radial-gradient(circle at 38% 30%,rgba(234,214,167,.12),transparent 62%);box-shadow:0 12px 32px rgba(0,0,0,.22)}
-.detail-umbral .umbral-ritual-title svg{width:1rem}
-.detail-umbral .umbral-ritual h2{margin:0;font-size:clamp(1.25rem,3vw,1.55rem);font-weight:300;line-height:1.08}
-.detail-umbral .umbral-prompt{max-width:35rem;margin:.55rem 0 0;color:#c9c1b5;font-size:1.02rem;line-height:1.55}
-.detail-umbral .umbral-capture{overflow:visible;width:100%;max-width:none;margin:.7rem 0 .45rem;padding:0;border:0;background:none;clip-path:none}
+.detail-umbral .umbral-ritual{position:relative;padding:.2rem 0 .45rem}
+.detail-umbral .umbral-ritual+.umbral-ritual{padding-top:.7rem;border-top:1px solid rgba(201,168,106,.18)}
+.detail-umbral .umbral-ritual-title{display:flex;align-items:center;gap:.55rem}
+.detail-umbral .umbral-ritual-title>span{display:grid;width:32px;aspect-ratio:1;flex:0 0 auto;place-items:center;border:1px solid rgba(201,168,106,.4);border-radius:50%;color:#ead6a7;background:radial-gradient(circle at 38% 30%,rgba(234,214,167,.12),transparent 62%);box-shadow:0 8px 20px rgba(0,0,0,.18)}
+.detail-umbral .umbral-ritual-title svg{width:.85rem}
+.detail-umbral .umbral-ritual h2{margin:0;font-size:clamp(1.05rem,2.6vw,1.28rem);font-weight:300;line-height:1.08}
+.detail-umbral .umbral-prompt{max-width:35rem;margin:.3rem 0 0;color:#c9c1b5;font-size:.9rem;line-height:1.4}
+.detail-umbral .umbral-capture{overflow:visible;width:100%;max-width:none;margin:.35rem 0 .2rem;padding:0;border:0;background:none;clip-path:none}
 .detail-umbral .umbral-capture::before{display:none}
-.detail-umbral .umbral-capture label{gap:.7rem;color:#b9b3aa;letter-spacing:.04em;text-transform:uppercase}
-.detail-umbral .umbral-capture :is(input,textarea){min-height:54px;padding:.85rem .15rem;border:0;border-bottom:1px solid rgba(201,168,106,.34);border-radius:0;background:transparent;font-family:Georgia,'Times New Roman',serif;font-size:1.18rem;letter-spacing:0;text-transform:none;transition:border-color 180ms ease,box-shadow 220ms ease}
-.detail-umbral .umbral-capture textarea{min-height:5rem}
+.detail-umbral .umbral-capture label{display:grid;grid-template-columns:minmax(6.5rem,9.5rem) minmax(0,1fr);align-items:center;gap:.25rem .7rem;color:#b9b3aa;font:300 .78rem/1.25 Georgia,'Times New Roman',serif;letter-spacing:0;text-transform:none}
+.detail-umbral .umbral-capture :is(input,textarea){min-height:2.15rem;padding:.28rem .1rem;border:0;border-bottom:1px solid rgba(201,168,106,.34);border-radius:0;background:transparent;font:300 .95rem/1.35 Georgia,'Times New Roman',serif;letter-spacing:0;text-transform:none;transition:border-color 180ms ease,box-shadow 220ms ease}
+.detail-umbral .umbral-capture textarea{min-height:3.1rem;grid-column:1/-1}
+.detail-umbral .umbral-capture label:has(textarea){grid-template-columns:1fr;align-items:stretch}
 .detail-umbral .umbral-capture :is(input,textarea):focus{outline:0;border-bottom-color:#ead6a7;background:linear-gradient(180deg,transparent,rgba(201,168,106,.035));box-shadow:0 14px 24px -22px rgba(234,214,167,.75)}
-.detail-umbral .umbral-capture .workspace-primary{justify-self:end;width:auto;min-width:10rem;border-radius:14px;clip-path:none}
-.detail-umbral .umbral-workspace blockquote{position:relative;margin:1.5rem 0 0;padding:1rem 1.25rem 1rem 1.7rem;border:0;color:#ead6a7;font-size:1.15rem;font-style:italic;line-height:1.55}
-.detail-umbral .umbral-workspace blockquote::before{content:'✦';position:absolute;left:0;top:1.1rem;color:#c9a86a;font-size:.7rem}
-.detail-umbral .workspace-empty{margin:1rem 0 0}
+.detail-umbral .umbral-capture .workspace-primary{justify-self:end;width:auto;min-width:8.5rem;min-height:40px;border-radius:999px;clip-path:none}
+.detail-umbral .umbral-workspace blockquote{position:relative;margin:.7rem 0 0;padding:.55rem .85rem .55rem 1.4rem;border:0;color:#ead6a7;font-size:.95rem;font-style:italic;line-height:1.45}
+.detail-umbral .umbral-workspace blockquote::before{content:'✦';position:absolute;left:0;top:.65rem;color:#c9a86a;font-size:.7rem}
+.detail-umbral .workspace-empty{margin:.45rem 0 0;padding:.65rem .8rem;font-size:.88rem}
 .detail-umbral .intention-row input{width:20px;height:20px;flex:0 0 auto;margin-top:.12rem}
-@media(max-width:760px){.detail-umbral .workspace-header{display:grid;grid-template-columns:44px minmax(0,1fr);align-items:center;gap:.8rem;margin-bottom:1.25rem}.detail-umbral .workspace-back{width:44px;margin:0;justify-content:center;overflow:hidden;border:1px solid rgba(201,168,106,.28);border-radius:50%}.detail-umbral .workspace-back span{display:none}.detail-umbral .workspace-back svg{width:1.05rem}.detail-umbral .workspace-title{display:contents}.detail-umbral .workspace-title::after{display:none}.detail-umbral .workspace-title>div{min-width:0}.detail-umbral .workspace-header h1{font-size:clamp(1.55rem,7vw,2rem)}.detail-umbral .workspace-header p{display:none}.detail-umbral .umbral-ritual{padding-top:.35rem}.detail-umbral .umbral-ritual+.umbral-ritual{padding-top:1.15rem}.detail-umbral .umbral-capture{padding:0}.detail-umbral .umbral-capture .workspace-primary{min-width:9.5rem}}
+@media(max-width:760px){.detail-umbral .workspace-header{display:grid;grid-template-columns:44px minmax(0,1fr);align-items:center;gap:.8rem;margin-bottom:.7rem}.detail-umbral .workspace-back{width:44px;margin:0;justify-content:center;overflow:hidden;border:1px solid rgba(201,168,106,.28);border-radius:50%}.detail-umbral .workspace-back span{display:none}.detail-umbral .workspace-back svg{width:1.05rem}.detail-umbral .workspace-title{display:contents}.detail-umbral .workspace-title::after{display:none}.detail-umbral .workspace-title>div{min-width:0}.detail-umbral .workspace-header h1{font-size:clamp(1.35rem,6vw,1.75rem)}.detail-umbral .workspace-header p{display:none}.detail-umbral .umbral-ritual{padding-top:.2rem}.detail-umbral .umbral-ritual+.umbral-ritual{padding-top:.65rem}.detail-umbral .umbral-capture{padding:0}.detail-umbral .umbral-capture label{grid-template-columns:1fr}.detail-umbral .umbral-capture .workspace-primary{min-width:8.5rem}}
 @media(max-width:420px){.detail-umbral .workspace-primary{width:auto}.detail-umbral .umbral-ritual-title{align-items:flex-start}.detail-umbral .umbral-ritual-title>span{width:40px}.detail-umbral .umbral-ritual h2{font-size:1.35rem}}
 /* Núcleo: los pensamientos se agrupan por emoción dentro de un plasma local y privado. */
 .detail-nucleo .nucleus-map-copy{max-width:38rem;margin:0 0 1.1rem;color:#c8c0d9;font-style:italic;line-height:1.6}
@@ -892,17 +953,67 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer); clearTimeout(decr
 .journey-picker{display:grid;gap:.6rem}.journey-picker label{color:#b9b3aa;font:600 .72rem/1.3 system-ui,sans-serif;text-transform:uppercase;letter-spacing:.06em}.journey-picker>div{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.6rem}.journey-picker>div input{min-width:0;min-height:48px;border:0;border-bottom:1px solid rgba(125,167,151,.42);outline:0;background:transparent;color:#f4efe5;padding:.65rem .15rem;font:1rem/1.4 Georgia,'Times New Roman',serif}.journey-picker>div input:focus-visible{border-bottom-color:#ead6a7;box-shadow:0 2px #ead6a7}.journey-picker>div button{min-height:44px;border:1px solid rgba(201,168,106,.42);border-radius:999px;background:rgba(201,168,106,.1);color:#ead6a7;padding:.65rem 1rem;font:600 .78rem/1 system-ui,sans-serif;cursor:pointer}.journey-picker>div button:disabled{cursor:wait;opacity:.55}.journey-results{display:grid;max-height:14rem;margin:0;padding:.3rem;overflow:auto;border:1px solid rgba(125,167,151,.32);border-radius:1rem;background:#0d121b;list-style:none}.journey-results button{width:100%;min-height:44px;border:0;border-bottom:1px solid rgba(125,167,151,.14);background:transparent;color:#e3f0e8;padding:.6rem .7rem;text-align:left;cursor:pointer}.journey-results button:is(:hover,:focus-visible){outline:0;background:rgba(125,167,151,.12);color:#f4efe5}.journey-selected-place{display:grid;gap:.35rem;padding:.85rem 0;border-block:1px solid rgba(125,167,151,.2)}.journey-selected-place small{color:#b9c9c1;font:600 .68rem/1.3 system-ui,sans-serif;text-transform:uppercase;letter-spacing:.08em}.journey-selected-place strong{color:#e3f0e8;font-size:1.15rem;font-weight:300}.journey-selected-place.empty strong{color:#a9b9b2;font-size:1rem;font-style:italic}.journey-location-message{margin:0;color:#b9c9c1;font:.76rem/1.45 system-ui,sans-serif}
 .decree-ritual{position:fixed;z-index:120;inset:0;display:grid;place-content:center;justify-items:center;gap:2rem;padding:2rem;background:#080b11;color:#f4efe5;text-align:center;cursor:pointer}.decree-ritual>button{position:absolute;right:1rem;top:1rem;display:grid;width:48px;height:48px;place-items:center;border:0;background:transparent;color:#d8d1c6}.decree-ritual>button svg{width:1rem}.decree-ritual blockquote{max-width:38rem;margin:0;font-size:clamp(1.7rem,5vw,3rem);font-weight:250;line-height:1.25}.decree-ritual>div{display:flex;gap:1rem}.decree-ritual>div span{width:1rem;aspect-ratio:1;border:1px solid rgba(201,168,106,.42);border-radius:50%}.decree-ritual>div span.filled{background:#c9a86a;box-shadow:0 0 18px rgba(201,168,106,.48)}.decree-ritual p{margin:0;color:#c9a86a;font-style:italic}
 .decree-claim{position:fixed;z-index:121;inset:0;display:grid;place-content:center;justify-items:center;gap:1.2rem;padding:2rem;background:rgba(8,11,17,.96);color:#f4efe5;text-align:center}.decree-claim p{margin:0;color:#b9b3aa}.decree-claim strong{max-width:34rem;color:#ead6a7;font-size:clamp(1.4rem,4vw,2.2rem);font-weight:300}.decree-claim>div{display:flex;gap:.75rem}.decree-claim button{min-height:48px;border:1px solid rgba(201,168,106,.35);border-radius:12px;background:transparent;color:#d8d1c6;padding:.75rem 1rem}.decree-claim button:last-child{background:rgba(201,168,106,.14);color:#ead6a7}
-.balance-base-income{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:1rem;width:min(100%,34rem);margin:1.25rem auto 0}.balance-base-income label{display:grid;gap:.45rem;color:#b9b3aa;font:600 .72rem/1.3 system-ui,sans-serif}.balance-base-income input,.daruma-progress input{min-height:46px;box-sizing:border-box;border:1px solid rgba(201,168,106,.28);border-radius:10px;background:#0d121b;color:#f4efe5;padding:.65rem .75rem}.balance-recurring{display:flex!important;grid-template-columns:auto 1fr!important;align-items:center;min-height:44px}.balance-recurring input{width:22px!important;min-height:22px!important}.daruma-progress{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.45rem;margin-top:.6rem}.daruma-progress button,.daruma-transfer{display:inline-flex;min-height:44px;align-items:center;justify-content:center;gap:.35rem;border:1px solid rgba(201,168,106,.38);border-radius:10px;background:rgba(201,168,106,.1);color:#ead6a7;padding:.55rem .75rem;cursor:pointer}.daruma-transfer{margin-top:.6rem}.daruma-transfer svg{width:1rem}
-@media(max-width:560px){.balance-base-income{grid-template-columns:1fr}.decree-ritual{padding:1.5rem}.balance-base-income .workspace-primary{width:100%}}
+.balance-base-income{display:flex;flex-wrap:wrap;align-items:center;gap:.3rem .55rem;width:fit-content;max-width:100%;margin:.35rem 0 0;padding:.45rem .7rem}.balance-base-income label{margin:0;color:#c9c1b5;font:300 .8rem/1.3 Georgia,'Times New Roman',serif}.balance-base-row{display:flex;align-items:center;gap:.15rem}.balance-base-income .balance-money-field{width:8.6rem;flex:0 0 auto}.balance-base-edit{display:grid;width:44px;height:44px;place-items:center;border:0;background:transparent;color:#ead6a7;cursor:pointer}.balance-base-edit svg{width:1rem}.balance-base-edit:focus-visible{outline:2px solid #ead6a7;outline-offset:2px}.balance-base-saved{width:100%;margin:0;color:#c9a86a;font:italic 300 .78rem/1.3 Spectral,'Aureo Serif',Georgia,serif}.daruma-progress input{min-height:46px;box-sizing:border-box;border:1px solid rgba(201,168,106,.28);border-radius:10px;background:#0d121b;color:#f4efe5;padding:.65rem .75rem}.balance-recurring{display:flex!important;grid-template-columns:auto 1fr!important;align-items:center;min-height:44px}.balance-recurring input{width:22px!important;min-height:22px!important}.daruma-progress{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.45rem;margin-top:.6rem}.daruma-progress button,.daruma-transfer{display:inline-flex;min-height:44px;align-items:center;justify-content:center;gap:.35rem;border:1px solid rgba(201,168,106,.38);border-radius:10px;background:rgba(201,168,106,.1);color:#ead6a7;padding:.55rem .75rem;cursor:pointer}.daruma-transfer{margin-top:.6rem}.daruma-transfer svg{width:1rem}
+@media(max-width:560px){.decree-ritual{padding:1.5rem}}
 @media(max-width:760px){.workspace-primary{min-height:44px;padding:.6rem .9rem}.ritual-form,.nucleus-entry,.golden-entry{padding:.95rem;gap:.85rem}.ritual-form{padding:.95rem}.workspace-text,.workspace-back{min-height:40px}.daruma-progress button,.daruma-transfer,.segmented-choice button{padding:.5rem .7rem}}
 @media(prefers-reduced-motion:reduce){.tw-workspace{animation:workspace-appear 160ms ease-out both}.workspace-aura,.ritual-form::before,.thought-cloth,.thought-cloth>button span,.plasma-pool,.golden-sculpture,.golden-sculpture>.resin-rift,.golden-sculpture>button span,.umbral-workspace::before{animation:none}.workspace-record,.intention-row{animation:none}.thought-float-enter-active,.thought-float-leave-active,.thought-float-enter-active .thought-reading,.thought-float-leave-active .thought-reading{transition-duration:1ms}.tw-workspace *{scroll-behavior:auto!important;transition-duration:120ms!important}}@keyframes workspace-appear{from{opacity:.72}to{opacity:1}}
 /* v1.3 — los detalles son lecturas en un campo, no tarjetas administrativas. */
-.tw-workspace{padding:clamp(.2rem,1.2vw,1rem);border-radius:2.1rem 1.1rem 3.25rem 1.3rem/1.4rem 2.55rem 1.65rem 2.8rem}.workspace-header{padding:.45rem .35rem .85rem}.workspace-back{border-radius:999px;padding:.65rem .9rem;background:rgba(8,11,17,.28)}.workspace-title{padding:.2rem .45rem}.ritual-form{padding:clamp(1.05rem,2.5vw,1.55rem);border:1px solid color-mix(in srgb,var(--workspace-accent) 28%,transparent);border-radius:1.65rem 1rem 2.75rem 1.2rem/1.25rem 2.25rem 1.55rem 2.45rem;background:linear-gradient(135deg,color-mix(in srgb,var(--workspace-accent) 8%,rgba(10,15,23,.72)),rgba(8,11,17,.34));backdrop-filter:blur(13px);clip-path:none;box-shadow:0 20px 48px rgba(0,0,0,.15)}.ritual-form::before{display:none}.ritual-form :is(input,select,textarea){border-radius:1rem 1rem 1.55rem 1rem;background:rgba(7,11,17,.58)}.workspace-primary{border-radius:999px;clip-path:none;box-shadow:0 12px 28px rgba(0,0,0,.2)}.workspace-primary::after{display:none}.workspace-primary:hover{transform:translateY(-1px);box-shadow:0 16px 36px color-mix(in srgb,var(--workspace-accent) 15%,rgba(0,0,0,.22))}.workspace-record{padding:.95rem .55rem .95rem 1.5rem;border-bottom-color:color-mix(in srgb,var(--workspace-accent) 17%,transparent)}.workspace-record>button,.daruma-progress button,.daruma-transfer{border-radius:999px}.workspace-empty{padding:1rem 1.1rem;border:1px dashed color-mix(in srgb,var(--workspace-accent) 28%,transparent);border-radius:1.5rem 1rem 1.8rem 1.1rem;background:color-mix(in srgb,var(--workspace-accent) 4%,transparent)}.balance-base-income{padding:1.15rem 1.2rem;border:1px solid rgba(201,168,106,.2);border-radius:1.6rem 1.05rem 2.3rem 1.2rem;background:rgba(10,15,23,.42);backdrop-filter:blur(12px)}.thought-reading{border:1px solid color-mix(in srgb,var(--thought-color) 36%,transparent);border-radius:1.6rem 1rem 2.6rem 1.1rem/1.2rem 2.25rem 1.55rem 2.1rem;background:radial-gradient(circle at 12% 8%,color-mix(in srgb,var(--thought-color) 12%,transparent),transparent 44%),rgba(13,18,27,.94);backdrop-filter:blur(14px)}.nucleus-entry,.golden-entry{padding:1.25rem 1.35rem;border:1px solid color-mix(in srgb,var(--workspace-accent) 24%,transparent);border-radius:1.65rem 1rem 2.55rem 1.15rem;background:rgba(9,13,21,.4);backdrop-filter:blur(13px)}.nucleus-entry textarea,.golden-entry textarea{border-radius:1.05rem 1.05rem 1.7rem 1.05rem}.nucleus-gate{padding:1.75rem;border:1px solid rgba(129,115,183,.25);border-radius:2rem 1.25rem 2.7rem 1.1rem;background:rgba(10,14,23,.48);backdrop-filter:blur(14px)}.note-grid button{border-radius:50%}
+.tw-workspace{padding:clamp(.2rem,1.2vw,1rem);border-radius:2.1rem 1.1rem 3.25rem 1.3rem/1.4rem 2.55rem 1.65rem 2.8rem}.workspace-header{padding:.45rem .35rem .85rem}.workspace-back{border-radius:999px;padding:.65rem .9rem;background:rgba(8,11,17,.28)}.workspace-title{padding:.2rem .45rem}.ritual-form{padding:clamp(1.05rem,2.5vw,1.55rem);border:1px solid color-mix(in srgb,var(--workspace-accent) 28%,transparent);border-radius:1.65rem 1rem 2.75rem 1.2rem/1.25rem 2.25rem 1.55rem 2.45rem;background:linear-gradient(135deg,color-mix(in srgb,var(--workspace-accent) 8%,rgba(10,15,23,.72)),rgba(8,11,17,.34));backdrop-filter:blur(13px);clip-path:none;box-shadow:0 20px 48px rgba(0,0,0,.15)}.ritual-form::before{display:none}.ritual-form :is(input,select,textarea){border-radius:1rem 1rem 1.55rem 1rem;background:rgba(7,11,17,.58)}.workspace-primary{border-radius:999px;clip-path:none;box-shadow:0 12px 28px rgba(0,0,0,.2)}.workspace-primary::after{display:none}.workspace-primary:hover{transform:translateY(-1px);box-shadow:0 16px 36px color-mix(in srgb,var(--workspace-accent) 15%,rgba(0,0,0,.22))}.workspace-record{padding:.95rem .55rem .95rem 1.5rem;border-bottom-color:color-mix(in srgb,var(--workspace-accent) 17%,transparent)}.workspace-record>button,.daruma-progress button,.daruma-transfer{border-radius:999px}.workspace-empty{padding:1rem 1.1rem;border:1px dashed color-mix(in srgb,var(--workspace-accent) 28%,transparent);border-radius:1.5rem 1rem 1.8rem 1.1rem;background:color-mix(in srgb,var(--workspace-accent) 4%,transparent)}.balance-base-income{padding:.4rem .65rem .4rem .85rem;border:1px solid rgba(201,168,106,.2);border-radius:1.6rem 1.05rem 2.3rem 1.2rem;background:rgba(10,15,23,.42);backdrop-filter:blur(12px)}.thought-reading{border:1px solid color-mix(in srgb,var(--thought-color) 36%,transparent);border-radius:1.6rem 1rem 2.6rem 1.1rem/1.2rem 2.25rem 1.55rem 2.1rem;background:radial-gradient(circle at 12% 8%,color-mix(in srgb,var(--thought-color) 12%,transparent),transparent 44%),rgba(13,18,27,.94);backdrop-filter:blur(14px)}.nucleus-entry,.golden-entry{padding:1.25rem 1.35rem;border:1px solid color-mix(in srgb,var(--workspace-accent) 24%,transparent);border-radius:1.65rem 1rem 2.55rem 1.15rem;background:rgba(9,13,21,.4);backdrop-filter:blur(13px)}.nucleus-entry textarea,.golden-entry textarea{border-radius:1.05rem 1.05rem 1.7rem 1.05rem}.nucleus-gate{padding:1.75rem;border:1px solid rgba(129,115,183,.25);border-radius:2rem 1.25rem 2.7rem 1.1rem;background:rgba(10,14,23,.48);backdrop-filter:blur(14px)}.note-grid button{border-radius:50%}
 @media(max-width:760px){.tw-workspace{padding:0;border-radius:1.65rem 1rem 2.4rem 1rem}.workspace-header{padding:.4rem .15rem 1.1rem}.ritual-form,.nucleus-entry,.golden-entry{border-radius:1.35rem 1rem 2rem 1rem}.balance-base-income{border-radius:1.35rem 1rem 2rem 1rem}.workspace-primary{width:auto}.workspace-record>button{border-radius:999px}.nucleus-gate{border-radius:1.65rem 1.15rem 2.25rem 1rem}}
 @media(min-width:1024px){.tw-workspace{padding:.35rem}.workspace-header{margin-bottom:1.05rem;padding:.25rem .15rem .7rem}.workspace-header h1{font-size:clamp(1.85rem,2.6vw,2.45rem)}.workspace-title{padding:.1rem .15rem}.workspace-grid,.balance-lists,.umbral-workspace{gap:1.15rem}.detail-world-vinculos .constellation-workspace{gap:1.5rem}.constellation-map{width:min(100%,30rem)}.ritual-form{padding:1.05rem}}
-.ritual-form textarea,.nucleus-entry textarea,.golden-entry textarea{min-height:5.25rem;resize:none}
+.ritual-form textarea,.nucleus-entry textarea,.golden-entry textarea{min-height:4.25rem;resize:none}
+.ritual-form>label:not(:has(textarea)):not(.balance-recurring){display:grid;grid-template-columns:minmax(6.5rem,11.25rem) minmax(0,1fr);align-items:center;gap:.3rem .75rem;color:#c9c1b5;font:300 .8rem/1.3 Georgia,'Times New Roman',serif}
+.ritual-form :is(input,select){min-height:2.35rem;padding:.35rem .7rem;font:300 .92rem/1.35 Georgia,'Times New Roman',serif}
+.ritual-form textarea{padding:.55rem .7rem;font:300 .92rem/1.45 Georgia,'Times New Roman',serif}
+.ritual-form .balance-money-field,.balance-base-income .balance-money-field{display:flex;align-items:center;gap:.3rem;min-width:0;min-height:2.35rem;padding:0 .7rem;border:1px solid rgba(201,168,106,.25);border-radius:1rem 1rem 1.55rem 1rem;background:rgba(7,11,17,.58)}
+.ritual-form .balance-money-field input,.balance-base-income .balance-money-field input{min-height:2.2rem;padding:.3rem 0;border:0;border-radius:0;background:transparent}
+.balance-money-sign{flex:0 0 auto;color:#d7b873;font:300 .95rem/1 Georgia,'Times New Roman',serif}
+.ritual-form input[type=number],.balance-base-income input[type=number]{appearance:textfield;-moz-appearance:textfield}
+.ritual-form input[type=number]::-webkit-outer-spin-button,.ritual-form input[type=number]::-webkit-inner-spin-button,.balance-base-income input[type=number]::-webkit-outer-spin-button,.balance-base-income input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.care-inscription-editor>label:not(:has(textarea)){grid-template-columns:minmax(5.5rem,8.5rem) minmax(0,1fr);align-items:center;gap:.3rem .75rem;font:300 .8rem/1.3 Georgia,'Times New Roman',serif}
+.care-inscription-editor input{min-height:2.25rem;padding:.3rem .1rem;font:300 .92rem/1.35 Georgia,'Times New Roman',serif}
+.care-inscription-editor textarea{min-height:4rem;padding:.45rem .1rem;font:300 .92rem/1.45 Georgia,'Times New Roman',serif}
 .note-grid button.hint{background:#c9a86a;color:#080b11;border-color:#ead6a7;box-shadow:0 0 16px rgba(201,168,106,.4)}
 .nucleus-hint{display:inline-flex;min-height:44px;margin:.35rem auto 0;align-items:center;padding:.55rem 1.1rem;border:1px solid rgba(201,168,106,.4);border-radius:999px;background:transparent;color:#ead6a7;font:600 .78rem/1 system-ui,sans-serif;cursor:pointer}
 .nucleus-hint:disabled{opacity:.62;cursor:wait}
 .workspace-title.workspace-title-quiet{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.workspace-panes{display:flex;justify-content:center;align-items:stretch;gap:.4rem;width:100%;margin:0}
+.workspace-panes button{flex:1 1 0;min-height:44px;max-width:12.5rem;margin:0;padding:.45rem .7rem;border:1px solid rgba(201,168,106,.22);border-radius:999px;background:transparent;color:#b9b3aa;font:300 .88rem/1.15 Georgia,'Times New Roman',serif;letter-spacing:.01em;cursor:pointer}
+.workspace-panes button[aria-selected="true"]{color:#ead6a7;border-color:#c9a86a;background:rgba(201,168,106,.14)}
+.workspace-panes button:focus-visible{outline:2px solid #ead6a7;outline-offset:2px}
+.detail-balance .workspace-title{display:flex;justify-content:center;width:100%;padding-inline:0}
+.detail-balance .workspace-title::after{left:50%;right:auto;width:min(72%,18rem);transform:translateX(-50%);transform-origin:center}
+.balance-pane{display:grid;gap:.85rem}
+.balance-pane .balance-lists{display:grid;grid-template-columns:minmax(0,1fr);margin-top:.15rem}
+.balance-pane .ritual-form:not(.open){gap:0;padding:.7rem .8rem}
+@media(max-width:760px){.detail-balance .workspace-header{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:.5rem}.detail-balance .workspace-back{margin:0}}
+.detail-balance .workspace-header{margin-bottom:.55rem}
+.balance-pane .goal-composer{width:100%;max-width:none;margin:0;gap:.4rem;padding:.65rem .75rem .7rem}
+.goal-composer .goal-row{display:grid;grid-template-columns:minmax(5.4rem,8.2rem) minmax(0,1fr);align-items:center;gap:.18rem .6rem;margin:0;color:#c9c1b5;font:300 .76rem/1.2 Georgia,'Times New Roman',serif}
+.goal-composer .goal-row:has(.goal-swatches){grid-template-columns:minmax(0,1fr);align-items:start;gap:.28rem}
+.goal-composer .goal-row :is(input,.balance-money-field){min-height:2.15rem}
+.goal-composer .goal-row input{padding:.25rem .55rem;font-size:.88rem}
+.goal-composer .balance-money-field{min-height:2.15rem;padding:0 .55rem}
+.goal-swatches{display:flex;flex-wrap:nowrap;align-items:center;gap:.28rem;min-width:0;overflow:auto}
+.goal-swatches button{width:28px;height:28px;margin:0;padding:0;border:2px solid transparent;border-radius:50%;flex:0 0 auto;cursor:pointer}
+.goal-swatches button.selected{border-color:#f4efe5;outline:2px solid #c9a86a;outline-offset:1px}
+.goal-composer .workspace-primary{justify-self:end;width:auto;min-width:8.5rem;min-height:40px;margin-top:.1rem;padding:.4rem .9rem;font-size:.8rem}
+.goal-ledger{gap:0}
+.goal-ledger .workspace-record.daruma{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:.4rem .55rem;padding:.4rem .1rem;border-bottom:1px solid rgba(201,168,106,.14)}
+.goal-ledger .workspace-record.daruma>span{width:1.05rem;height:1.05rem;border-radius:50%}
+.goal-ledger .daruma-copy{min-width:0}
+.goal-ledger .daruma-copy h3{margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.95rem;font-weight:300;line-height:1.15}
+.goal-ledger .daruma-copy p{margin:.08rem 0 0;font-size:.7rem}
+.goal-ledger .daruma-progress{display:flex;align-items:center;gap:.28rem;margin:0}
+.goal-ledger .daruma-progress input{width:3.8rem;min-height:40px;padding:.28rem .4rem;border-radius:999px;font-size:.8rem}
+.goal-ledger .daruma-progress button,.goal-ledger .daruma-transfer{width:auto;min-height:40px;margin:0;padding:.32rem .65rem;font-size:.74rem}
+.goal-ledger small{color:#b9b3aa;font:italic 300 .72rem/1.3 Spectral,'Aureo Serif',Georgia,serif}
+.detail-edad-dorada .workspace-header{margin-bottom:0;padding:.1rem .1rem .15rem}
+.detail-edad-dorada .workspace-back{margin-bottom:0}
+.detail-edad-dorada .workspace-title::after{display:none}
+@media(max-width:760px){
+  .detail-edad-dorada .workspace-header{padding:.05rem 0 .1rem}
+  .detail-edad-dorada .workspace-back{min-height:40px;padding:.45rem .7rem}
+  .detail-edad-dorada .daruma-stage{margin-top:-.35rem}
+}
 </style>

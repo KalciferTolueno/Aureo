@@ -283,7 +283,7 @@ Antes de reactivar el modo multiusuario conviene repetir un smoke test remoto co
 
 - El Daruma de kintsugi reemplaza por completo la antigua esfera de resina rosada como acceso a Edad Dorada.
 - Todo el Daruma es el control táctil que abre el detalle; no existe un botón u objeto intermedio.
-- La declaración se escribe y forma directamente en la portada de Edad Dorada; abrir el detalle ya no es un requisito. El acceso secundario “Contemplar mis grietas” queda para recorrer y leer lo guardado.
+- La declaración se escribe y forma directamente en la portada de Edad Dorada; abrir el detalle ya no es un requisito. Debajo de ¿Qué reconoces hoy? se indica “Toca el daruma para contemplar sus grietas”.
 - Las grietas visibles en la portada corresponden a las declaraciones locales guardadas, hasta doce trazos distintos, y comparten el mismo patrón visual con el Daruma interior.
 - Su respiración visual solo modifica luz y saturación: no desplaza el área interactiva y respeta `prefers-reduced-motion`.
 
@@ -316,7 +316,7 @@ Antes de reactivar el modo multiusuario conviene repetir un smoke test remoto co
 
 ### Decisiones del 28 de agosto
 
-- Umbral persiste el arcano diario en `umbral_arcanos` y expone el mazo histórico.
+- Umbral persiste el arcano diario en `umbral_arcanos` y expone el mazo histórico. Desde la revisión de entrega del 03-09-2026, la lista visible de **Tu mazo diario** se limita a los últimos 7 días. El selector ☉/☾ de la cabecera vuelve a estar vigente: solo cambia luminosidad y el fondo permanece `#080B11`.
 - Mi Constelación conserva el signo opcional de cada vínculo.
 - Travesías presenta un mapa SVG local y guarda coordenadas reales y “¿Qué viviste ahí?”.
 - La séptima activación ritual de un Decreto crea un nodo sin texto en Edad Dorada.

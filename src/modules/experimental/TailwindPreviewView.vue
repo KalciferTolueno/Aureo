@@ -6,7 +6,7 @@ import { storage } from '@/data/storage'
 import AppIcon from '@/shared/components/AppIcon.vue'
 import { useProfileStore } from '@/stores/profile'
 import type { BalanceMovement, DailyArcana, Daruma, GoldenDeclaration, Idea, NucleusThought, Pulse } from '@/domain/types'
-import { dailyPulsePrompt, greetingForHour, isSameLocalDay, localDateKey, lunarPhaseIndex as phaseIndexFor, MAXIMS, nextMaximIndex, umbralDateLabel, arcanaPhrase, LUNAR_PHASES } from '@/domain/umbral'
+import { dailyPulsePrompt, greetingForHour, isSameLocalDay, localDateKey, lunarPhaseIndex as phaseIndexFor, MAXIMS, nextMaximIndex, recentDailyArcana, umbralDateLabel, arcanaPhrase, LUNAR_PHASES, resolveLumen, type LumenMode } from '@/domain/umbral'
 import TailwindWorkspace from './tailwind/TailwindWorkspace.vue'
 import VueBitsLightRays from './tailwind/VueBitsLightRays.vue'
 import UmbralMoonStrip from './tailwind/UmbralMoonStrip.vue'
@@ -78,6 +78,7 @@ const selectedNucleusThoughtId = ref<string | null>(null)
 const nucleusPreviewDialog = ref<HTMLElement | null>(null)
 const balanceOverlay = ref<'movement' | 'goal' | null>(null)
 const balanceOverlayDialog = ref<HTMLElement | null>(null)
+const arcanaOverlayDialog = ref<HTMLElement | null>(null)
 const balanceSaving = ref(false)
 const arcanaHistory = ref<DailyArcana[]>([])
 const showArcanaDeck = ref(false)
@@ -110,6 +111,8 @@ const captureStep = ref<'write' | 'classify'>('write')
 const intentionDraft = ref('')
 const maximIndex = ref(Math.floor(Math.random() * MAXIMS.length))
 const maximFading = ref(false)
+const lumenPref = ref<LumenMode>('auto')
+const resolvedLumen = computed(() => resolveLumen(lumenPref.value))
 
 const selected = computed(() => axes.find((axis) => axis.id === selectedId.value) ?? axes[0]!)
 const zodiacKey = computed(() => profile.profile?.signo?.toLowerCase() ?? 'aries')
@@ -126,7 +129,8 @@ const balancePreviewFlowers = computed(() => [...balanceMovements.value]
   .slice(0, balancePreviewAnchors.length)
   .map((item, index) => ({ item, x: balancePreviewAnchors[index]![0], y: balancePreviewAnchors[index]![1], delay: index * 55 })))
 const balanceCurrency = computed(() => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }))
-const balanceTotal = computed(() => balanceMovements.value.reduce((sum, item) => sum + (item.tipo === 'ingreso' ? item.monto : -item.monto), 0))
+const balanceBaseIncome = ref(0)
+const balanceTotal = computed(() => (Number.isFinite(balanceBaseIncome.value) ? balanceBaseIncome.value : 0) + balanceMovements.value.reduce((sum, item) => sum + (item.tipo === 'ingreso' ? item.monto : -item.monto), 0))
 const balanceAmountLabel = computed(() => balanceAmountVisible.value ? balanceCurrency.value.format(balanceTotal.value) : '********')
 async function toggleBalanceAmount() {
   balanceAmountVisible.value = !balanceAmountVisible.value
@@ -150,7 +154,7 @@ const dayNumber = computed(() => {
 })
 const arcana = ['El Mago', 'La Sacerdotisa', 'La Emperatriz', 'El Emperador', 'El Hierofante', 'Los Enamorados', 'El Carro', 'La Fuerza', 'El Ermitaño', 'La Rueda', 'La Justicia', 'El Colgado', 'La Muerte', 'La Templanza', 'El Diablo', 'La Torre', 'La Estrella', 'La Luna', 'El Sol', 'El Juicio', 'El Mundo', 'El Loco']
 const card = computed(() => arcanaHistory.value.find((item) => item.fecha === localDateKey())?.nombre ?? arcana[(new Date().getDate() + new Date().getMonth()) % arcana.length]!)
-const recentArcana = computed(() => [...arcanaHistory.value].sort((a, b) => b.fecha.localeCompare(a.fecha)).slice(0, 14))
+const recentArcana = computed(() => recentDailyArcana(arcanaHistory.value))
 const lunarPhaseIndex = computed(() => phaseIndexFor())
 const lunarPhase = computed(() => LUNAR_PHASES[lunarPhaseIndex.value]!)
 const dailyPrompt = computed(() => dailyPulsePrompt())
@@ -277,6 +281,8 @@ async function refreshCounts() {
   }))
   worldCounts.value = Object.fromEntries(worldEntries)
   balanceMovements.value = (await storage.get<BalanceMovement[]>('balance_movimientos')) ?? []
+  const storedIncome = await storage.get<number>('balance_ingreso_base')
+  balanceBaseIncome.value = typeof storedIncome === 'number' && Number.isFinite(storedIncome) ? storedIncome : 0
   nucleusThoughts.value = (await storage.get<NucleusThought[]>('nucleo_pensamientos')) ?? []
   pulses.value = (await storage.get<Pulse[]>('pulso')) ?? []
   counts.value = {
@@ -374,10 +380,29 @@ async function addGoldenDeclaration() {
 
 watch(goldenDeclarationText, (value) => { if (value.trim()) goldenSaved.value = false })
 watch(() => profile.profile?.clave_app_hash, refreshNucleusAccess, { immediate: true })
-watch(selectedId, (id) => { if (id === 'nucleo') captureOpen.value = false })
+watch(selectedId, (id) => {
+  if (id === 'nucleo') captureOpen.value = false
+  if (id !== 'umbral') showArcanaDeck.value = false
+})
 watch(captureOpen, (value) => { if (!value) { captureStep.value = 'write'; captureText.value = '' } })
 
-function openDailyCard() { showArcanaDeck.value = true }
+async function openDailyCard() {
+  showArcanaDeck.value = true
+  await nextTick()
+  arcanaOverlayDialog.value?.focus()
+}
+
+function closeArcanaDeck() { showArcanaDeck.value = false }
+
+function toggleArcanaDeck() {
+  if (showArcanaDeck.value) closeArcanaDeck()
+  else void openDailyCard()
+}
+
+async function setLumen(mode: 'dia' | 'noche') {
+  lumenPref.value = mode
+  await storage.set('umbral_lumen', mode)
+}
 
 function rotateMaxim() {
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -443,6 +468,8 @@ onMounted(async () => {
   await refreshCounts()
   pulses.value = await pulseRepository.all()
   balanceAmountVisible.value = !((await storage.get<boolean>('balance_oculto')) ?? true)
+  const storedLumen = await storage.get<LumenMode>('umbral_lumen')
+  if (storedLumen === 'dia' || storedLumen === 'noche' || storedLumen === 'auto') lumenPref.value = storedLumen
   maximIndex.value = Math.floor(Math.random() * MAXIMS.length)
   await storage.set('maximaIdx', maximIndex.value)
   arcanaHistory.value = await arcanaRepository.all()
@@ -457,8 +484,18 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer) })
 </script>
 
 <template>
-  <main class="tailwind-lab tw:min-h-svh tw:bg-noche tw:font-aureo tw:text-marfil tw:selection:bg-oro/30" :style="zodiacStyle" :data-zodiac="zodiacKey">
-    <VueBitsLightRays v-if="selectedId === 'umbral' && !activeDetail" class-name="umbral-light-rays" color="#d8b977" :speed="0.38" :spread="1.8" :length="2.2" :pointer-influence=".012" :fps="24" :dpr="1.25" />
+  <main class="tailwind-lab tw:min-h-svh tw:bg-noche tw:font-aureo tw:text-marfil tw:selection:bg-oro/30" :style="zodiacStyle" :data-zodiac="zodiacKey" :data-lumen="selectedId === 'umbral' ? resolvedLumen : undefined">
+    <VueBitsLightRays
+      v-if="selectedId === 'umbral' && !activeDetail"
+      class-name="umbral-light-rays"
+      :color="resolvedLumen === 'dia' ? '#ead9a8' : '#c9a86a'"
+      :speed="0.38"
+      :spread="1.8"
+      :length="2.2"
+      :pointer-influence=".012"
+      :fps="24"
+      :dpr="1.25"
+    />
     <div class="aureo-app-frame tw:grid tw:min-h-svh tw:w-full tw:lg:grid-cols-[17rem_minmax(0,1fr)]">
       <aside class="tw:hidden tw:border-r tw:border-oro/15 tw:bg-noche/95 tw:px-5 tw:py-6 tw:lg:sticky tw:lg:top-0 tw:lg:flex tw:lg:h-svh tw:lg:flex-col">
         <div class="tw:flex tw:items-center tw:gap-3 tw:px-2">
@@ -505,8 +542,12 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer) })
                 <div v-if="selectedId === 'umbral'" class="axis-heading-lab umbral-heading" data-axis="umbral">
                     <div class="umbral-heading-bar">
                       <time :datetime="localDateKey()">{{ umbralDate }}</time>
+                      <h1 class="axis-welcome-title tw:mb-0 tw:max-w-none tw:font-extralight tw:leading-[0.96] tw:tracking-[-0.03em] tw:text-marfil">{{ greeting }}</h1>
+                      <div class="umbral-lumen" role="group" aria-label="Claridad de Umbral">
+                        <button type="button" :aria-pressed="resolvedLumen === 'dia'" aria-label="Modo día" @click="setLumen('dia')">☉</button>
+                        <button type="button" :aria-pressed="resolvedLumen === 'noche'" aria-label="Modo noche" @click="setLumen('noche')">☾</button>
+                      </div>
                     </div>
-                    <h1 class="axis-welcome-title tw:mb-0 tw:max-w-none tw:text-balance tw:font-extralight tw:leading-[0.96] tw:tracking-[-0.03em] tw:text-marfil">{{ greeting }}</h1>
                     <button type="button" class="umbral-maxim" :class="{ fading: maximFading }" @click="rotateMaxim">{{ currentMaxim }}</button>
                 </div>
                 <h1 v-else class="tw:sr-only">{{ selected.label }}</h1>
@@ -555,7 +596,7 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer) })
                       <div class="umbral-datum umbral-datum-arcana">
                         <dt>Arcano</dt>
                         <dd class="tarot-reading">
-                          <button type="button" class="tarot-open" :aria-expanded="showArcanaDeck" aria-controls="umbral-arcana-history" @click="showArcanaDeck = !showArcanaDeck">
+                          <button type="button" class="tarot-open" :aria-expanded="showArcanaDeck" aria-controls="umbral-arcana-history" @click="toggleArcanaDeck">
                           <span class="tarot-deck" aria-hidden="true">
                             <span class="tarot-card tarot-card-back tarot-card-back-left"><span class="tarot-card-mark" /></span>
                             <span class="tarot-card tarot-card-back tarot-card-back-right"><span class="tarot-card-mark" /></span>
@@ -665,17 +706,28 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer) })
                         <section ref="balanceOverlayDialog" class="balance-overlay-sheet" tabindex="-1" role="dialog" aria-modal="true" :aria-labelledby="balanceOverlay === 'movement' ? 'balance-movement-title' : 'balance-goal-title'">
                           <header><div><AppIcon :name="balanceOverlay === 'movement' ? 'balance' : 'star'" /><h2 :id="balanceOverlay === 'movement' ? 'balance-movement-title' : 'balance-goal-title'">{{ balanceOverlay === 'movement' ? 'Registrar movimiento' : 'Crear una meta' }}</h2></div><button type="button" :aria-label="balanceOverlay === 'movement' ? 'Cerrar registro de movimiento' : 'Cerrar nueva meta'" @click="closeBalanceOverlay"><AppIcon name="close" /></button></header>
                           <form v-if="balanceOverlay === 'movement'" class="balance-overlay-form" @submit.prevent="saveBalanceMovement">
-                            <fieldset class="balance-kind-choice"><legend>¿Cómo se mueve?</legend><button type="button" :class="{ active: balanceMovementForm.tipo === 'ingreso' }" @click="balanceMovementForm.tipo = 'ingreso'">Entra</button><button type="button" :class="{ active: balanceMovementForm.tipo === 'gasto' }" @click="balanceMovementForm.tipo = 'gasto'">Sale</button></fieldset>
-                            <label for="balance-home-amount">Monto<input id="balance-home-amount" v-model.number="balanceMovementForm.monto" type="number" min="1" inputmode="decimal" required autofocus /></label>
-                            <label for="balance-home-category">Categoría<select id="balance-home-category" v-model="balanceMovementForm.categoria"><option v-for="category in balanceCategories" :key="category">{{ category }}</option></select></label>
-                             <label for="balance-home-note">Una nota, si la necesitas<input id="balance-home-note" v-model="balanceMovementForm.nota" maxlength="160" /></label>
-                             <label class="balance-home-recurring"><input v-model="balanceMovementForm.recurrente" type="checkbox" /> Es un movimiento fijo mensual</label>
+                            <div class="balance-overlay-row" role="group" aria-labelledby="balance-home-kind-label">
+                              <span id="balance-home-kind-label">¿Cómo se mueve?</span>
+                              <div class="balance-kind-buttons">
+                                <button type="button" :class="{ active: balanceMovementForm.tipo === 'ingreso' }" @click="balanceMovementForm.tipo = 'ingreso'">Entra</button>
+                                <button type="button" :class="{ active: balanceMovementForm.tipo === 'gasto' }" @click="balanceMovementForm.tipo = 'gasto'">Sale</button>
+                              </div>
+                            </div>
+                            <label for="balance-home-amount" class="balance-overlay-row"><span>Monto</span><span class="balance-money-field"><span class="balance-money-sign" aria-hidden="true">$</span><input id="balance-home-amount" v-model.number="balanceMovementForm.monto" type="number" min="1" inputmode="decimal" required autofocus /></span></label>
+                            <label for="balance-home-category" class="balance-overlay-row"><span>Categoría</span><select id="balance-home-category" v-model="balanceMovementForm.categoria"><option v-for="category in balanceCategories" :key="category">{{ category }}</option></select></label>
+                            <label for="balance-home-note" class="balance-overlay-row"><span>Una nota, si la necesitas</span><input id="balance-home-note" v-model="balanceMovementForm.nota" maxlength="160" /></label>
+                            <label class="balance-home-recurring"><input v-model="balanceMovementForm.recurrente" type="checkbox" /> Es un movimiento fijo mensual</label>
                             <button class="balance-overlay-save" type="submit" :disabled="balanceMovementForm.monto <= 0 || balanceSaving">{{ balanceSaving ? 'Guardando…' : 'Guardar movimiento' }}</button>
                           </form>
                           <form v-else class="balance-overlay-form" @submit.prevent="saveBalanceGoal">
-                            <label for="balance-home-goal">¿Qué estás construyendo?<input id="balance-home-goal" v-model="balanceGoalForm.nombre" required maxlength="120" autofocus /></label>
-                            <label for="balance-home-target">Meta<input id="balance-home-target" v-model.number="balanceGoalForm.objetivo" type="number" min="1" inputmode="decimal" required /></label>
-                            <fieldset class="balance-color-choice"><legend>El color que la acompaña</legend><button v-for="color in balanceGoalColors" :key="color.value" type="button" :style="{ '--goal-color': color.value }" :class="{ selected: balanceGoalForm.color === color.value }" :aria-label="color.name" :title="color.name" @click="balanceGoalForm.color = color.value" /></fieldset>
+                            <label for="balance-home-goal" class="balance-overlay-row"><span>¿Qué estás construyendo?</span><input id="balance-home-goal" v-model="balanceGoalForm.nombre" required maxlength="120" autofocus /></label>
+                            <label for="balance-home-target" class="balance-overlay-row"><span>Meta</span><span class="balance-money-field"><span class="balance-money-sign" aria-hidden="true">$</span><input id="balance-home-target" v-model.number="balanceGoalForm.objetivo" type="number" min="1" inputmode="decimal" required /></span></label>
+                            <div class="balance-overlay-row" role="group" aria-labelledby="balance-home-color-label">
+                              <span id="balance-home-color-label">El color que la acompaña</span>
+                              <div class="balance-color-swatches">
+                                <button v-for="color in balanceGoalColors" :key="color.value" type="button" :style="{ '--goal-color': color.value }" :class="{ selected: balanceGoalForm.color === color.value }" :aria-label="color.name" :title="color.name" @click="balanceGoalForm.color = color.value" />
+                              </div>
+                            </div>
                             <button class="balance-overlay-save" type="submit" :disabled="!balanceGoalForm.nombre.trim() || balanceGoalForm.objetivo <= 0 || balanceSaving">{{ balanceSaving ? 'Guardando…' : 'Crear meta' }}</button>
                           </form>
                           </section>
@@ -703,7 +755,7 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer) })
                       <button v-for="entry in groupedNucleusThoughts" :key="entry.thought.id" type="button" class="nucleus-preview-point" :style="{ left: `${entry.x}%`, top: `${entry.y}%`, '--thought-color': entry.emotion.color, '--thought-index': entry.index }" :aria-label="`Abrir ${entry.emotion.label.toLowerCase()}: ${entry.thought.texto}`" @click="openNucleusThought(entry.thought.id)"><span /></button>
                     </div>
                     <form class="nucleus-capture-lab" @submit.prevent="addNucleusThought">
-                      <label for="nucleus-thought">Escríbelo. Nadie más lo verá. <small>Solo en este dispositivo.</small></label>
+                      <label for="nucleus-thought">Escríbelo. Nadie más lo verá.</label>
                       <textarea id="nucleus-thought" v-model="nucleusThoughtText" rows="2" maxlength="1200" placeholder="Escribe lo que aparece…" />
                       <button v-if="nucleusThoughtText.trim()" type="submit" :disabled="nucleusSaving">{{ nucleusSaving ? 'Guardando…' : 'Dejarlo aquí' }}</button>
                     </form>
@@ -713,7 +765,7 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer) })
                   </section>
 
                   <section v-else key="edad-dorada" class="golden-daruma-home tw:py-1" aria-label="Edad Dorada">
-                    <button type="button" class="axis-entry-button golden-daruma-entry" aria-label="Contemplar mis grietas" @click="openDetail('edad-dorada')">
+                    <button type="button" class="axis-entry-button golden-daruma-entry" aria-label="Toca el daruma para contemplar sus grietas" @click="openDetail('edad-dorada')">
                       <span class="golden-daruma-entry-art" aria-hidden="true">
                         <span class="golden-daruma-entry-aura" />
                         <svg viewBox="0 0 360 450">
@@ -749,20 +801,49 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer) })
                         <textarea id="golden-declaration-home" v-model="goldenDeclarationText" rows="2" maxlength="1200" placeholder="Declara este momento…" />
                         <button v-if="goldenDeclarationText.trim()" type="submit" :disabled="goldenSaving">{{ goldenSaving ? 'Formando…' : 'Formar una grieta' }}</button>
                       </form>
+                      <p class="golden-daruma-hint">Toca el daruma para contemplar sus grietas</p>
                       <p v-if="goldenSaved" class="golden-daruma-saved" role="status"><AppIcon name="star" /> Una nueva grieta guarda este momento.</p>
-                      <button type="button" class="golden-daruma-contemplate" @click="openDetail('edad-dorada')">Contemplar mis grietas</button>
                     </div>
                   </section>
                   </Transition>
                 </div>
 
                 <section v-if="selectedId === 'umbral'" class="umbral-threshold-notes" aria-label="Tu día en Umbral">
-                  <div v-if="showArcanaDeck" id="umbral-arcana-history" class="arcana-history">
-                    <p class="today-carta-reading">{{ dayNumber }} · {{ lunarPhase }} · {{ dailySign }}</p>
-                    <p class="today-carta-phrase">{{ cardPhrase }}</p>
-                    <h2>Tu mazo diario</h2>
-                    <ol><li v-for="item in recentArcana" :key="item.id"><time :datetime="item.fecha">{{ new Intl.DateTimeFormat('es-CL', { day: 'numeric', month: 'short' }).format(new Date(`${item.fecha}T12:00:00`)) }}</time><strong>{{ item.nombre }}</strong></li></ol>
-                  </div>
+                  <Teleport to="body">
+                    <Transition name="balance-overlay">
+                      <div v-if="showArcanaDeck" class="balance-overlay-layer" role="presentation" @click.self="closeArcanaDeck" @keydown.esc.stop="closeArcanaDeck">
+                        <section id="umbral-arcana-history" ref="arcanaOverlayDialog" class="balance-overlay-sheet arcana-overlay-sheet" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="umbral-mazo-title">
+                          <header>
+                            <div><AppIcon name="star" /><h2 id="umbral-mazo-title">Tu mazo diario</h2></div>
+                            <button type="button" aria-label="Cerrar el mazo" @click="closeArcanaDeck"><AppIcon name="close" /></button>
+                          </header>
+                          <div class="arcana-overlay-stage">
+                            <span class="tarot-deck arcana-overlay-deck" aria-hidden="true">
+                              <span class="tarot-card tarot-card-back tarot-card-back-left"><span class="tarot-card-mark" /></span>
+                              <span class="tarot-card tarot-card-back tarot-card-back-right"><span class="tarot-card-mark" /></span>
+                              <span class="tarot-card tarot-card-face">
+                                <svg viewBox="0 0 48 72" fill="none">
+                                  <rect x="5.5" y="5.5" width="37" height="61" rx="2.5" />
+                                  <path d="M11 36c4.4-7 8.8-10.5 13-10.5S32.6 29 37 36c-4.4 7-8.8 10.5-13 10.5S15.4 43 11 36Z" />
+                                  <circle cx="24" cy="36" r="4.5" />
+                                  <path d="M24 12v7m0 34v7M13 18l4.5 5m17.5-5-4.5 5" />
+                                </svg>
+                              </span>
+                            </span>
+                            <p class="tarot-card-name arcana-overlay-name">{{ card }}</p>
+                            <p class="today-carta-reading">{{ dayNumber }} · {{ lunarPhase }} · {{ dailySign }}</p>
+                            <p class="today-carta-phrase">{{ cardPhrase }}</p>
+                          </div>
+                          <ol>
+                            <li v-for="item in recentArcana" :key="item.id">
+                              <time :datetime="item.fecha">{{ new Intl.DateTimeFormat('es-CL', { day: 'numeric', month: 'short' }).format(new Date(`${item.fecha}T12:00:00`)) }}</time>
+                              <strong>{{ item.nombre }}</strong>
+                            </li>
+                          </ol>
+                        </section>
+                      </div>
+                    </Transition>
+                  </Teleport>
                   <div class="umbral-day-cluster">
                   <button type="button" @click="openDetail('umbral')">
                     <span class="threshold-symbol"><AppIcon name="decree" /></span>
@@ -868,7 +949,7 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer) })
 .tailwind-lab :is(button, a):focus-visible { outline: 2px solid #ead6a7 !important; outline-offset: 3px; box-shadow:0 0 0 1px var(--zodiac-color); }
 .axis-entry-button { color: inherit; font: inherit; cursor: pointer; transition: filter 220ms cubic-bezier(.23,1,.32,1); }
 .axis-entry-button:hover { filter: brightness(1.08); }
-.aureo-moon { width: 5.1rem; height: 5.1rem; overflow: visible; filter: drop-shadow(0 12px 24px rgba(0,0,0,.38)); }
+.aureo-moon { width: 5.1rem; height: 5.1rem; overflow: visible; filter: drop-shadow(0 12px 24px rgba(0,0,0,.38)); transition: filter .45s ease; }
 .moon-atmosphere { fill: none; stroke: rgba(201,168,106,.16); stroke-width: 1; stroke-dasharray: 2 7; transform-origin: 48px 48px; animation: moon-atmosphere-turn 18s linear infinite; }
 .moon-light { fill: url(#aureo-moon-light); }
 .moon-shadow { fill: url(#aureo-moon-night); }
@@ -880,9 +961,9 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer) })
 .umbral-number-trigger { border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; }
 .umbral-datum-number { pointer-events: auto; }
 .today-carta-reading { margin: 0 0 .85rem; color: #ead6a7; font: 300 .95rem/1.45 Spectral, 'Aureo Serif', Georgia, serif; }
-.umbral-pulse-card { grid-column: 1 / -1; display: grid; gap: .55rem; min-width: 0; padding: .75rem .95rem .85rem; border-block: 1px solid rgba(201,168,106,.28); background: radial-gradient(circle at 0 0, rgba(201,168,106,.09), transparent 48%); }
-.umbral-pulse-card header { display: grid; grid-template-columns: 2.25rem minmax(0,1fr); align-items: center; gap: .75rem; }
-.umbral-pulse-card textarea { width: 100%; min-height: 2.6rem; box-sizing: border-box; resize: vertical; padding: .4rem .1rem; border: 0; border-bottom: 1px solid rgba(201,168,106,.34); border-radius: 0; outline: 0; background: transparent; color: #f4efe5; font: 1.05rem/1.5 Georgia, 'Times New Roman', serif; caret-color: #ead6a7; }
+.umbral-pulse-card { grid-column: 1 / -1; display: grid; gap: .3rem; min-width: 0; padding: .5rem .7rem .55rem; border-block: 1px solid rgba(201,168,106,.28); background: radial-gradient(circle at 0 0, rgba(201,168,106,.09), transparent 48%); }
+.umbral-pulse-card header { display: grid; grid-template-columns: 1.65rem minmax(0,1fr); align-items: center; gap: .5rem; }
+.umbral-pulse-card textarea { width: 100%; min-height: 2rem; box-sizing: border-box; resize: vertical; padding: .25rem .1rem; border: 0; border-bottom: 1px solid rgba(201,168,106,.34); border-radius: 0; outline: 0; background: transparent; color: #f4efe5; font: 300 .9rem/1.4 Georgia, 'Times New Roman', serif; caret-color: #ead6a7; }
 .umbral-pulse-card textarea:focus { border-bottom-color: #ead6a7; }
 .umbral-pulse-card > button { justify-self: end; min-height: 44px; min-width: 9.5rem; border: 1px solid #c9a86a; border-radius: 999px; background: rgba(201,168,106,.14); color: #ead6a7; font: 300 .88rem/1 Georgia, 'Times New Roman', serif; cursor: pointer; }
 .umbral-pulse-card > button:disabled { cursor: wait; opacity: .58; }
@@ -900,23 +981,28 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer) })
 .mobile-axis-active .mobile-axis-icon { border-color:color-mix(in srgb,var(--zodiac-color) 58%,#c9a86a); background:color-mix(in srgb,var(--zodiac-color) 10%,transparent); }
 
 .axis-heading-lab { position: relative; animation: axis-heading-in 420ms cubic-bezier(.23,1,.32,1) both; }
-.axis-welcome-title { font-size:clamp(2.05rem,5.4vw,3.15rem); }
+.axis-welcome-title { font-size:clamp(1.7rem,4.4vw,2.55rem); }
 .axis-heading-lab::after { content: ''; position: absolute; left: 0; bottom: 0; width: 4.5rem; height: 1px; background:linear-gradient(90deg,#c9a86a 0 42%,var(--zodiac-color) 68%,transparent); }
 .axis-heading-lab>div:first-child { min-width: 0; }
-.axis-heading-lab.umbral-heading { display: grid; justify-items: center; gap: .35rem; text-align: center; }
-.umbral-carta { position: relative; min-height: 18rem; padding: .2rem 0 .35rem; }
+.axis-heading-lab.umbral-heading { display: grid; justify-items: center; gap: .28rem; text-align: center; }
+.axis-heading-lab.umbral-heading .umbral-heading-bar { justify-self: stretch; }
+.umbral-carta { position: relative; min-height: 15.5rem; padding: .15rem 0 .2rem; }
 .worlds-stage-lab { min-height: 22rem; }
 .worlds-caption { margin-top: -1.35rem; font-size: 1.02rem; }
 .nucleus-privacy-note { margin: 0; color: #b9b3aa; font: 500 .72rem/1.35 system-ui, sans-serif; letter-spacing: .04em; }
 .nucleus-home-cluster { display: grid; justify-items: center; gap: .35rem; width: min(100%, 34rem); }
-.nucleus-capture-lab label small { display: block; margin-top: .2rem; color: #b9b3aa; font: 500 .68rem/1.3 system-ui, sans-serif; letter-spacing: .03em; }
 .nucleus-capture-lab textarea, .golden-daruma-capture textarea, .umbral-pulse-card textarea { resize: none; }
 .balance-home-actions { display: grid; grid-template-columns: 1fr 1fr; gap: .55rem; width: min(100%, 34rem); margin: .35rem auto 0; }
-.umbral-heading .axis-welcome-title { font-family: Fraunces, 'Aureo Serif', Georgia, serif; font-weight: 200; }
+.umbral-heading .axis-welcome-title { font-family: Fraunces, 'Aureo Serif', Georgia, serif; font-weight: 200; font-size: clamp(1.02rem, 3.6vw, 1.38rem); }
 .umbral-heading::after { left: 50%; width: min(38vw, 7.5rem); transform: translateX(-50%); }
-.umbral-heading-bar { width: 100%; text-align: center; }
-.umbral-heading-bar time { display: block; color: #c9c1b5; font: 300 .95rem/1.4 Spectral, 'Aureo Serif', Georgia, serif; }
-.umbral-maxim { max-width: 34rem; margin: .15rem 0 0; padding: 0; border: 0; background: transparent; color: #c9a86a; font: italic 300 1.02rem/1.55 Spectral, 'Aureo Serif', Georgia, serif; cursor: pointer; transition: opacity .4s ease; }
+.umbral-heading-bar { display: grid; grid-template-columns: minmax(0,1fr) auto minmax(0,1fr); align-items: center; gap: .4rem; width: 100%; }
+.umbral-heading-bar time { justify-self: start; color: #c9c1b5; font: 300 .88rem/1.3 Spectral, 'Aureo Serif', Georgia, serif; white-space: nowrap; }
+.umbral-heading-bar .axis-welcome-title { justify-self: center; text-align: center; white-space: nowrap; }
+.umbral-heading-bar .umbral-lumen { justify-self: end; }
+.umbral-lumen { display: flex; align-items: center; justify-content: flex-end; gap: .05rem; }
+.umbral-lumen button { display: grid; width: 40px; height: 36px; place-items: center; padding: 0; border: 0; background: transparent; color: rgba(201, 168, 106, .42); font: 300 1.05rem/1 Spectral, 'Aureo Serif', Georgia, serif; cursor: pointer; }
+.umbral-lumen button[aria-pressed="true"] { color: #c9a86a; }
+.umbral-maxim { max-width: 34rem; margin: .05rem 0 0; padding: 0; border: 0; background: transparent; color: #c9a86a; font: italic 300 .92rem/1.45 Spectral, 'Aureo Serif', Georgia, serif; cursor: pointer; transition: opacity .4s ease; }
 .umbral-maxim.fading { opacity: 0; }
 .today-carta-phrase { margin: .15rem 0 1.05rem; color: #c9a86a; font: italic 300 1.08rem/1.5 Spectral, 'Aureo Serif', Georgia, serif; }
 .axis-heading-meta { display: grid; flex: 0 0 auto; justify-items: end; gap: 1rem; text-align: right; }
@@ -925,7 +1011,7 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer) })
 .axis-sigil-lab { border-color:color-mix(in srgb,var(--zodiac-color) 42%,#c9a86a) !important; background:color-mix(in srgb,var(--zodiac-color) 7%,transparent); box-shadow:0 14px 34px rgba(0,0,0,.2),inset 0 0 0 1px rgba(201,168,106,.06); }
 .ritual-stage-lab { display:grid; isolation: isolate; min-height:0; }
 .ritual-stage-lab > section { min-height:0; }
-.ritual-stage-lab > .umbral-carta { min-height: 18rem; }
+.ritual-stage-lab > .umbral-carta { min-height: 15.5rem; }
 .ritual-stage-lab > .worlds-stage-lab { min-height: 22rem; }
 @keyframes axis-heading-in { from { opacity: .65; transform: translateY(6px); } }
 .axis-ritual-enter-active { transition: opacity 160ms cubic-bezier(.23,1,.32,1); }
@@ -964,17 +1050,32 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer) })
 .balance-home-blossom b { position:absolute; left:11px; top:11px; width:6px; height:6px; border-radius:50%; background:#d6aa68; box-shadow:0 2px 7px rgba(214,170,104,.45); }
 .balance-home-count { position:absolute; z-index:4; left:50%; bottom:2%; width:max-content; max-width:80%; color:#aaa197; font:500 .7rem/1.4 system-ui,sans-serif; letter-spacing:.03em; transform:translateX(-50%); }
 .balance-overlay-layer { position:fixed; z-index:80; inset:0; display:grid; place-items:center; padding:clamp(1rem,4vw,2.5rem); background:rgba(4,6,10,.72); backdrop-filter:blur(9px); }
-.balance-overlay-sheet { position:relative; width:min(100%,34rem); max-height:min(43rem,calc(100svh - 2rem)); box-sizing:border-box; overflow:auto; padding:clamp(1.25rem,4vw,2rem); border:1px solid rgba(201,168,106,.3); border-radius:16px; outline:0; background:radial-gradient(circle at 92% 2%,rgba(233,182,198,.1),transparent 32%),#0d121b; box-shadow:0 28px 80px rgba(0,0,0,.58); }
-.balance-home-recurring{display:flex!important;grid-template-columns:auto 1fr!important;align-items:center}.balance-home-recurring input{width:20px!important;min-height:20px!important}
+.balance-overlay-sheet { position:relative; width:min(100%,32rem); max-height:min(38rem,calc(100svh - 2rem)); box-sizing:border-box; overflow:auto; padding:clamp(1rem,3vw,1.35rem); border:1px solid rgba(201,168,106,.3); border-radius:16px; outline:0; background:radial-gradient(circle at 92% 2%,rgba(233,182,198,.1),transparent 32%),#0d121b; box-shadow:0 28px 80px rgba(0,0,0,.58); }
+.balance-home-recurring{display:flex!important;grid-template-columns:none!important;align-items:center;gap:.55rem;color:#c9c1b5;font:300 .8rem/1.35 Georgia,'Times New Roman',serif}.balance-home-recurring input{width:18px!important;min-height:18px!important;flex:0 0 auto}
 .balance-overlay-sheet::before { content:''; position:absolute; inset:0 auto 0 0; width:1px; background:linear-gradient(transparent,#c9a86a,transparent); }
-.balance-overlay-sheet>header { display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; margin-bottom:1.1rem; }
-.balance-overlay-sheet>header>div { display:flex; align-items:center; gap:.8rem; min-width:0; }.balance-overlay-sheet>header>div>svg { width:1.3rem; flex:0 0 auto; color:#d7b873; }.balance-overlay-sheet h2 { margin:0; color:#f4efe5; font:300 clamp(1.35rem,4vw,1.75rem)/1.05 Georgia,'Times New Roman',serif; letter-spacing:-.02em; }
+.balance-overlay-sheet>header { display:flex; align-items:flex-start; justify-content:space-between; gap:.75rem; margin-bottom:.7rem; }
+.balance-overlay-sheet>header>div { display:flex; align-items:center; gap:.55rem; min-width:0; }.balance-overlay-sheet>header>div>svg { width:1.05rem; flex:0 0 auto; color:#d7b873; }.balance-overlay-sheet h2 { margin:0; color:#f4efe5; font:300 clamp(1.12rem,2.6vw,1.28rem)/1.1 Georgia,'Times New Roman',serif; letter-spacing:-.02em; }
 .balance-overlay-sheet>header>button { display:grid; width:44px; height:44px; flex:0 0 auto; place-items:center; margin:-.65rem -.65rem 0 0; border:0; background:transparent; color:#d8d1c6; cursor:pointer; }.balance-overlay-sheet>header>button svg { width:1rem; }
 .balance-overlay-sheet :is(button,input,select):focus-visible { outline:2px solid #ead6a7; outline-offset:2px; }
-.balance-overlay-form { display:grid; gap:1rem; }.balance-overlay-form>label { display:grid; gap:.45rem; color:#c9c1b5; font:600 .72rem/1.3 system-ui,sans-serif; }.balance-overlay-form :is(input,select) { width:100%; min-height:48px; box-sizing:border-box; padding:.75rem .15rem; border:0; border-bottom:1px solid rgba(201,168,106,.34); border-radius:0; outline:0; background:transparent; color:#f4efe5; font:1rem/1.45 Georgia,'Times New Roman',serif; caret-color:#ead6a7; }.balance-overlay-form :is(input,select):focus { border-bottom-color:#ead6a7; background:linear-gradient(180deg,transparent,rgba(201,168,106,.04)); }.balance-overlay-form select { color-scheme:dark; }
-.balance-kind-choice,.balance-color-choice { display:flex; flex-wrap:wrap; gap:.55rem; margin:0; padding:0; border:0; }.balance-kind-choice legend,.balance-color-choice legend { width:100%; margin-bottom:.2rem; color:#c9c1b5; font:600 .72rem/1.3 system-ui,sans-serif; }.balance-kind-choice button { min-height:44px; flex:1 1 8rem; border:1px solid rgba(201,168,106,.27); border-radius:14px; background:transparent; color:#c9c1b5; font:600 .78rem/1 system-ui,sans-serif; cursor:pointer; }.balance-kind-choice button.active { border-color:#c9a86a; background:rgba(201,168,106,.13); color:#ead6a7; }
-.balance-color-choice button { width:38px; height:38px; padding:0; border:2px solid transparent; border-radius:50%; background:var(--goal-color); cursor:pointer; }.balance-color-choice button.selected { border-color:#f4efe5; outline:2px solid #c9a86a; outline-offset:2px; }
-.balance-overlay-save { min-height:48px; margin-top:.35rem; border:1px solid #c9a86a; border-radius:14px; background:rgba(201,168,106,.14); color:#ead6a7; font:650 .82rem/1 system-ui,sans-serif; cursor:pointer; }.balance-overlay-save:is(:hover,:focus-visible) { background:rgba(201,168,106,.22); }.balance-overlay-save:disabled { cursor:not-allowed; opacity:.46; }
+.balance-overlay-form { display:grid; gap:.55rem; }
+.balance-overlay-row { display:grid; grid-template-columns:minmax(5.5rem,auto) minmax(0,1fr); align-items:center; gap:.28rem .7rem; color:#c9c1b5; font:300 .78rem/1.25 Georgia,'Times New Roman',serif; }
+.balance-overlay-row>span:first-child { max-width:11rem; }
+.balance-overlay-row>span:first-child { min-width:0; }
+.balance-overlay-form :is(input,select) { width:100%; min-height:2.2rem; box-sizing:border-box; padding:.2rem .1rem; border:0; border-bottom:1px solid rgba(201,168,106,.34); border-radius:0; outline:0; background:transparent; color:#f4efe5; font:300 .92rem/1.3 Georgia,'Times New Roman',serif; caret-color:#ead6a7; }
+.balance-overlay-form :is(input,select):focus { border-bottom-color:#ead6a7; background:linear-gradient(180deg,transparent,rgba(201,168,106,.04)); }
+.balance-overlay-form select { color-scheme:dark; min-height:2.2rem; }
+.balance-money-field { display:flex; align-items:baseline; gap:.28rem; min-width:0; border-bottom:1px solid rgba(201,168,106,.34); }
+.balance-money-field:focus-within { border-bottom-color:#ead6a7; }
+.balance-money-field input { border-bottom:0; padding:.15rem 0; min-height:2.1rem; }
+.balance-money-sign { flex:0 0 auto; color:#d7b873; font:300 .95rem/1 Georgia,'Times New Roman',serif; }
+.balance-overlay-form input[type=number] { appearance:textfield; -moz-appearance:textfield; }
+.balance-overlay-form input[type=number]::-webkit-outer-spin-button,.balance-overlay-form input[type=number]::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+.balance-kind-buttons,.balance-color-swatches { display:flex; flex-wrap:nowrap; align-items:center; gap:.32rem; min-width:0; }
+.balance-kind-buttons button { min-height:40px; flex:1 1 5.25rem; border:1px solid rgba(201,168,106,.27); border-radius:999px; background:transparent; color:#c9c1b5; font:300 .78rem/1 Georgia,'Times New Roman',serif; cursor:pointer; }
+.balance-kind-buttons button.active { border-color:#c9a86a; background:rgba(201,168,106,.13); color:#ead6a7; }
+.balance-color-swatches button { width:28px; height:28px; flex:0 0 auto; padding:0; border:2px solid transparent; border-radius:50%; background:var(--goal-color); cursor:pointer; }
+.balance-color-swatches button.selected { border-color:#f4efe5; outline:2px solid #c9a86a; outline-offset:2px; }
+.balance-overlay-save { min-height:44px; margin-top:.1rem; border:1px solid #c9a86a; border-radius:999px; background:rgba(201,168,106,.14); color:#ead6a7; font:300 .86rem/1 Georgia,'Times New Roman',serif; cursor:pointer; }.balance-overlay-save:is(:hover,:focus-visible) { background:rgba(201,168,106,.22); }.balance-overlay-save:disabled { cursor:not-allowed; opacity:.46; }
 .balance-overlay-enter-active,.balance-overlay-leave-active { transition:opacity 180ms ease; }.balance-overlay-enter-active .balance-overlay-sheet,.balance-overlay-leave-active .balance-overlay-sheet { transition:transform 340ms cubic-bezier(.16,1,.3,1),filter 260ms ease; }.balance-overlay-enter-from,.balance-overlay-leave-to { opacity:0; }.balance-overlay-enter-from .balance-overlay-sheet,.balance-overlay-leave-to .balance-overlay-sheet { filter:blur(5px); transform:translateY(1rem) scale(.96); }
 @keyframes balance-home-bloom { to { opacity:1; filter:blur(0); transform:translate(-50%,-50%) scale(1); } }
 @keyframes balance-orbit-breathe { 0%,100% { opacity:.35; transform:scale(.96); } 50% { opacity:1; transform:scale(1.04); } }
@@ -997,8 +1098,8 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer) })
 .umbral-datum { position: absolute; min-width: 5.5rem; padding: .55rem .7rem .62rem; border: 1px solid rgba(201,168,106,.22); background: rgba(8,11,17,.88); box-shadow: 0 12px 26px rgba(0,0,0,.26); text-align: center; animation: umbral-object-reveal 620ms cubic-bezier(.16,1,.3,1) both; }
 .umbral-datum dt { color: #b9b3aa; font: 300 .78rem/1.3 Spectral, 'Aureo Serif', Georgia, serif; letter-spacing: .03em; }
 .umbral-datum dd { max-width: 9rem; margin: .25rem 0 0; color: #ead6a7; font-family: Fraunces, 'Aureo Serif', Georgia, serif; font-size: 1.35rem; font-weight: 300; line-height: 1.05; text-wrap: balance; }
-.umbral-datum-number { left: auto; right: 6%; top: 8%; animation-delay: 80ms; }
-.umbral-datum-arcana { left: 4%; bottom: 2%; width: 8.75rem; pointer-events:auto; animation-delay: 280ms; }
+.umbral-datum-number { left: 3%; right: auto; top: calc(2% + 2.65rem); bottom: auto; animation-delay: 80ms; }
+.umbral-datum-arcana { left: auto; right: 2%; top: 2%; bottom: auto; width: 8.75rem; pointer-events:auto; animation-delay: 280ms; }
 @keyframes umbral-object-reveal { from { opacity: .32; filter: blur(6px); clip-path: inset(0 50%); } to { opacity: 1; filter: blur(0); clip-path: inset(0); } }
 
 .tarot-reading { display: grid; justify-items: center; gap: .42rem; }
@@ -1014,7 +1115,18 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer) })
 .tarot-card-face { z-index: 3; color: #ead6a7; background: radial-gradient(circle at 50% 38%, rgba(201,168,106,.18), transparent 48%), #171d29; transform: translateX(-50%) translateY(-.18rem); animation: tarot-card-reveal 1.75s cubic-bezier(.16,1,.3,1) 520ms both; backface-visibility: hidden; }
 .tarot-card-face svg { width: 2.35rem; stroke: currentColor; stroke-width: 1; }
 .tarot-card-name { max-width: 8rem; color: #ead6a7; font-family: Fraunces, 'Aureo Serif', Georgia, serif; font-size: 1.05rem; font-weight: 300; line-height: 1.05; text-wrap: balance; }
-.arcana-history{grid-column:1/-1;padding:1.15rem 0 1.35rem;border-block:1px solid rgba(201,168,106,.2)}.arcana-history h2{margin:0 0 1rem;font-family:Fraunces,'Aureo Serif',Georgia,serif;font-size:1.4rem;font-weight:300}.arcana-history ol{display:grid;grid-template-columns:repeat(auto-fit,minmax(9rem,1fr));gap:.65rem;margin:0;padding:0;list-style:none}.arcana-history li{display:grid;gap:.25rem;padding:.7rem;border-bottom:1px solid rgba(201,168,106,.16)}.arcana-history time{color:#9f978d;font:300 .78rem/1.3 Spectral,'Aureo Serif',Georgia,serif}.arcana-history strong{color:#ead6a7;font-family:Fraunces,'Aureo Serif',Georgia,serif;font-weight:300}
+.arcana-overlay-sheet { width: min(100%, 28rem); max-height: min(40rem, calc(100svh - 2rem)); }
+.arcana-overlay-stage { display: grid; justify-items: center; gap: .28rem; padding: .15rem 0 .55rem; text-align: center; }
+.arcana-overlay-deck { width: 6.2rem; height: 6.5rem; margin: .1rem 0 .45rem; }
+.arcana-overlay-deck .tarot-card { width: 3.4rem; height: 5.25rem; }
+.arcana-overlay-deck .tarot-card-face svg { width: 2.85rem; }
+.arcana-overlay-name { max-width: 16rem; margin: 0; font-size: 1.28rem; }
+.arcana-overlay-sheet .today-carta-reading { margin: .2rem 0 0; font-size: .86rem; }
+.arcana-overlay-sheet .today-carta-phrase { margin: .1rem 0 0; max-width: 32ch; font-size: .98rem; }
+.arcana-overlay-sheet ol { display: grid; grid-template-columns: repeat(auto-fit, minmax(7.4rem, 1fr)); gap: .35rem .55rem; margin: .7rem 0 0; padding: .7rem 0 0; border-top: 1px solid rgba(201,168,106,.2); list-style: none; }
+.arcana-overlay-sheet li { display: grid; gap: .12rem; padding: .35rem .1rem .45rem; border-bottom: 1px solid rgba(201,168,106,.14); }
+.arcana-overlay-sheet time { color: #9f978d; font: 300 .74rem/1.3 Spectral, 'Aureo Serif', Georgia, serif; }
+.arcana-overlay-sheet strong { color: #ead6a7; font-family: Fraunces, 'Aureo Serif', Georgia, serif; font-weight: 300; font-size: .92rem; }
 @keyframes tarot-shuffle-left {
   0% { transform: translateX(-50%) rotate(0); }
   32% { transform: translateX(calc(-50% - 1.55rem)) translateY(-.35rem) rotate(-15deg); }
@@ -1033,15 +1145,15 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer) })
   100% { opacity: 1; filter: brightness(1); transform: translateX(-50%) translateY(-.18rem) rotateY(0); }
 }
 
-.umbral-threshold-notes { display: grid; gap: .5rem; width: min(100%, 44rem); margin: .35rem auto 0; padding-bottom: .85rem; }
-.umbral-day-cluster { display: grid; grid-template-columns: minmax(0,.72fr) minmax(0,1.28fr); gap: .65rem; }
-.umbral-threshold-notes .umbral-day-cluster>button { position: relative; display: grid; min-width: 0; min-height: 4.25rem; grid-template-columns: 2.25rem minmax(0,1fr); align-items: center; gap: .75rem; overflow: hidden; border: 0; background: radial-gradient(circle at 0 0, rgba(201,168,106,.09), transparent 48%); color: #f4efe5; padding: .75rem .9rem; text-align: left; cursor: pointer; }
+.umbral-threshold-notes { display: grid; gap: .35rem; width: min(100%, 44rem); margin: .1rem auto 0; padding-bottom: .35rem; }
+.umbral-day-cluster { display: grid; grid-template-columns: minmax(0,.72fr) minmax(0,1.28fr); gap: .4rem; }
+.umbral-threshold-notes .umbral-day-cluster>button { position: relative; display: grid; min-width: 0; min-height: 2.7rem; grid-template-columns: 1.65rem minmax(0,1fr); align-items: center; gap: .5rem; overflow: hidden; border: 0; background: radial-gradient(circle at 0 0, rgba(201,168,106,.09), transparent 48%); color: #f4efe5; padding: .4rem .65rem; text-align: left; cursor: pointer; }
 .umbral-threshold-notes .umbral-day-cluster>button::after { content: ''; position: absolute; right: 0; top: 0; width: 1px; height: 52%; background: linear-gradient(#c9a86a, transparent); opacity: .55; }
 .umbral-threshold-notes .umbral-day-cluster>button:hover,.umbral-threshold-notes .umbral-day-cluster>button:focus-visible { background-color: rgba(201,168,106,.05); }
-.threshold-symbol { display: grid; width: 2.4rem; aspect-ratio: 1; place-items: center; border: 1px solid rgba(201,168,106,.35); border-radius: 50%; color: #c9a86a; }
-.threshold-symbol svg { width: 1rem; }
-.umbral-threshold-notes small { display: block; margin-bottom: .3rem; color: #b9b3aa; font: 300 .78rem/1.3 Spectral, 'Aureo Serif', Georgia, serif; letter-spacing: .02em; }
-.umbral-threshold-notes strong { display: block; overflow-wrap: anywhere; color: #ead6a7; font-family: Fraunces, 'Aureo Serif', Georgia, serif; font-size: clamp(1.05rem,2.8vw,1.35rem); font-weight: 300; line-height: 1.15; text-wrap: balance; }
+.threshold-symbol { display: grid; width: 1.65rem; aspect-ratio: 1; place-items: center; border: 1px solid rgba(201,168,106,.35); border-radius: 50%; color: #c9a86a; }
+.threshold-symbol svg { width: .85rem; }
+.umbral-threshold-notes small { display: block; margin-bottom: .08rem; color: #b9b3aa; font: 300 .68rem/1.25 Spectral, 'Aureo Serif', Georgia, serif; letter-spacing: .02em; }
+.umbral-threshold-notes strong { display: block; overflow-wrap: anywhere; color: #ead6a7; font-family: Fraunces, 'Aureo Serif', Georgia, serif; font-size: .92rem; font-weight: 300; line-height: 1.15; text-wrap: balance; }
 
 .worlds-stage-lab { position: relative; }
 .worlds-stage-lab::before { content: ''; position: absolute; z-index: -1; width: min(82vw, 31rem); aspect-ratio: 1; border: 1px solid rgba(201,168,106,.12); border-radius: 50%; transform: rotateX(67deg) rotateZ(-12deg); }
@@ -1137,13 +1249,13 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer) })
 .golden-daruma-capture>button:disabled { cursor:wait; opacity:.58; }
 .golden-daruma-saved { display:flex; align-items:center; gap:.55rem; margin:0; color:#cfc5b0; font:.84rem/1.45 system-ui,sans-serif; }
 .golden-daruma-saved svg { width:1rem; flex:0 0 auto; color:#ead6a7; }
-.golden-daruma-contemplate { justify-self:start; min-height:44px; padding:.25rem 0; border:0; border-bottom:1px solid rgba(201,168,106,.36); background:transparent; color:#bdb6aa; font:600 .78rem/1.2 system-ui,sans-serif; cursor:pointer; transition:color 180ms ease,border-color 180ms ease; }
-.golden-daruma-contemplate:hover { border-color:#ead6a7; color:#ead6a7; }
+.golden-daruma-hint { margin:0; color:#c9a86a; font:300 .78rem/1.35 Fraunces,'Aureo Serif',Georgia,serif; }
 @keyframes golden-daruma-entry-breathe { 0%,100% { filter:brightness(.94) saturate(.94); } 50% { filter:brightness(1.06) saturate(1.04); } }
 
 @media (max-width: 639px) {
   .axis-heading-lab { justify-content: space-between !important; padding-inline: 0; text-align: left; }
   .axis-heading-lab.umbral-heading { justify-content: center !important; justify-items: center; text-align: center; }
+  .axis-heading-lab.umbral-heading .umbral-heading-bar { justify-self: stretch; }
   .axis-heading-lab::after { left: 0; transform: none; }
   .axis-heading-lab.umbral-heading::after { left: 50%; transform: translateX(-50%); }
   .ritual-stage-lab { margin-top: .2rem; }
@@ -1159,7 +1271,11 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer) })
   .privacy-seal-lab { top:18%; font-size:.52rem; }
   .balance-home-count { max-width:76%; }
   .balance-overlay-layer { align-items:end; padding:1rem 1rem calc(1rem + env(safe-area-inset-bottom)); }
-  .balance-overlay-sheet { width:100%; max-height:min(42rem,calc(100svh - 1rem)); padding:1.25rem 1.2rem calc(1.35rem + env(safe-area-inset-bottom)); }
+  .balance-overlay-sheet { width:100%; max-height:min(42rem,calc(100svh - 1rem)); padding:1rem 1.05rem calc(1.15rem + env(safe-area-inset-bottom)); }
+  .arcana-overlay-sheet { max-height: min(38rem, calc(100svh - 1rem)); }
+  .balance-overlay-row { grid-template-columns:minmax(5.25rem,auto) minmax(0,1fr); gap:.22rem .55rem; }
+  .balance-overlay-row>span:first-child { max-width:9.5rem; }
+  .balance-color-swatches { flex-wrap:wrap; }
   .golden-daruma-home { width:100%; grid-template-columns:minmax(0,1fr); gap:.75rem; }
   .golden-daruma-entry { width:100%; max-width:13.5rem; margin-inline:auto; }
   .golden-daruma-practice { width:min(100%,30rem); margin-inline:auto; }
@@ -1168,13 +1284,18 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer) })
   .nucleus-light-lab { transform: rotate(var(--angle)) translateY(-7rem) rotate(calc(var(--angle) * -1)); }
   .umbral-datum { min-width: 4.5rem; padding: .45rem .5rem .5rem; }
   .umbral-datum dd { max-width: 7.5rem; font-size: 1.08rem; }
-  .umbral-datum-number { left: auto; right: 2%; top: 4%; }
-  .umbral-datum-arcana { left: 1%; bottom: 0; width: 7.6rem; }
+  .umbral-datum-number { left: 0; right: auto; top: calc(0% + 1.15rem); bottom: auto; }
+  .umbral-datum-arcana { left: auto; right: 0; top: 0; bottom: auto; width: 6.85rem; padding: .38rem .4rem .42rem; }
+  .umbral-datum-arcana .tarot-deck { width: 3.7rem; height: 3.55rem; margin-top: .08rem; margin-bottom: 0; }
+  .umbral-datum-arcana .tarot-card { width: 2.15rem; height: 3.25rem; }
+  .umbral-datum-arcana .tarot-card-face svg { width: 1.85rem; }
+  .umbral-datum-arcana .tarot-card-name { max-width: 6.4rem; font-size: .86rem; }
+  .umbral-datum-arcana .tarot-open small { margin-top: .1rem; font-size: .62rem; }
   .tarot-deck { transform: scale(.9); transform-origin: center top; margin-bottom: -.45rem; }
   .tarot-card-name { max-width: 7rem; font-size: .96rem; }
-  .umbral-threshold-notes { grid-template-columns: minmax(0,1fr); gap: .55rem; }
-  .umbral-day-cluster { grid-template-columns: minmax(0,1fr); }
-  .umbral-threshold-notes .umbral-day-cluster>button { min-height: 4rem; }
+  .umbral-threshold-notes { grid-template-columns: minmax(0,1fr); gap: .35rem; }
+  .umbral-day-cluster { grid-template-columns: 1fr; }
+  .umbral-threshold-notes .umbral-day-cluster>button { min-height: 2.55rem; }
   .nucleus-preview-layer { align-items:end; padding:1rem 1rem calc(7.25rem + env(safe-area-inset-bottom)); }
   .nucleus-preview-reading { width:100%; }
   .nucleus-capture-lab { width:100%; padding-top:1rem; }
@@ -1202,8 +1323,7 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer) })
   .golden-daruma-capture label { grid-column:1/-1; font-size:1.25rem; }
   .golden-daruma-capture textarea { min-height:3.5rem; max-height:5rem; }
   .golden-daruma-capture>button { width:auto; }
-  .golden-daruma-saved { margin:0; }
-  .golden-daruma-contemplate { justify-self:end; }
+  .golden-daruma-hint,.golden-daruma-saved { grid-column:1/-1; margin:0; }
   .nucleus-cloth-lab { width: min(19rem, 66svh) !important; }
 }
 
@@ -1223,16 +1343,20 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer) })
 }
 
 /* v1.3 — capas espaciales de Vue Bits y superficies menos administrativas. */
-.umbral-light-rays{position:fixed!important;z-index:1!important;inset:0!important;width:100vw!important;height:100svh!important;pointer-events:none;opacity:.42}.aureo-app-frame{position:relative;z-index:2;width:100%;max-width:none}.aureo-content-shell{padding-inline:clamp(1.25rem,4vw,5rem)}.aureo-content-width{max-width:none}.tailwind-lab::after{content:'';position:fixed;z-index:0;inset:0;pointer-events:none;background:radial-gradient(ellipse 68% 42% at 50% 42%,transparent 38%,rgba(3,5,9,.32) 100%);mix-blend-mode:multiply}
+.umbral-light-rays{position:fixed!important;z-index:1!important;inset:0!important;width:100vw!important;height:100svh!important;pointer-events:none;opacity:.42;transition:opacity .45s ease}
+.tailwind-lab[data-lumen="dia"] .umbral-light-rays{opacity:.68}
+.tailwind-lab[data-lumen="noche"] .umbral-light-rays{opacity:.28}
+.tailwind-lab[data-lumen="dia"] .aureo-moon{filter:drop-shadow(0 12px 24px rgba(0,0,0,.38)) drop-shadow(0 0 16px rgba(234,214,167,.35))}
+.tailwind-lab[data-lumen="noche"] .aureo-moon{filter:drop-shadow(0 12px 24px rgba(0,0,0,.38))}.aureo-app-frame{position:relative;z-index:2;width:100%;max-width:none}.aureo-content-shell{padding-inline:clamp(1.25rem,4vw,5rem)}.aureo-content-width{max-width:none}.tailwind-lab::after{content:'';position:fixed;z-index:0;inset:0;pointer-events:none;background:radial-gradient(ellipse 68% 42% at 50% 42%,transparent 38%,rgba(3,5,9,.32) 100%);mix-blend-mode:multiply}
 .tailwind-lab>.aureo-app-frame>aside{position:relative;border-right-color:rgba(201,168,106,.13)!important;background:linear-gradient(128deg,rgba(12,17,27,.94),rgba(8,11,17,.76))!important;backdrop-filter:blur(18px)}.tailwind-lab>.aureo-app-frame>aside::after{content:'';position:absolute;right:-1px;top:7%;bottom:7%;width:1px;background:linear-gradient(transparent,var(--zodiac-color),transparent);opacity:.52}.desktop-axis-nav{gap:.55rem!important}.desktop-axis-nav button{min-height:3.25rem!important;border-radius:999px!important;padding-inline:1rem!important;transition:background-color 220ms ease,color 220ms ease,transform 220ms cubic-bezier(.16,1,.3,1)!important}.desktop-axis-nav button:hover{background:color-mix(in srgb,var(--zodiac-color) 8%,transparent)!important;transform:translateX(.2rem)}.desktop-axis-active{background:linear-gradient(90deg,color-mix(in srgb,var(--zodiac-color) 15%,transparent),rgba(201,168,106,.06),transparent)!important}.desktop-axis-nav button::before{left:.35rem!important;height:1.55rem!important}.desktop-axis-active .desktop-axis-icon{box-shadow:0 0 0 4px color-mix(in srgb,var(--zodiac-color) 8%,transparent),0 10px 24px rgba(0,0,0,.2)}
-.axis-home-lab{display:grid;gap:.45rem;min-height:0;padding:.1rem 0 .4rem;border-radius:0}.axis-home-lab:not(:has(.umbral-threshold-notes)){min-height:calc(100svh - 9.25rem);align-content:center}.axis-heading-lab{padding:.1rem 0 .5rem}.axis-heading-lab::after{width:min(42vw,8.5rem);background:linear-gradient(90deg,transparent,#c9a86a 26%,var(--zodiac-color) 60%,transparent)}.ritual-stage-lab>.umbral-carta{min-height:18rem}.ritual-stage-lab>.worlds-stage-lab{min-height:22rem}
+.axis-home-lab{display:grid;gap:.35rem;min-height:0;padding:.1rem 0 .25rem;border-radius:0}.axis-home-lab:not(:has(.umbral-threshold-notes)){min-height:calc(100svh - 9.25rem);align-content:center}.axis-heading-lab{padding:.05rem 0 .35rem}.axis-heading-lab::after{width:min(42vw,8.5rem);background:linear-gradient(90deg,transparent,#c9a86a 26%,var(--zodiac-color) 60%,transparent)}.ritual-stage-lab>.umbral-carta{min-height:15.5rem}.ritual-stage-lab>.worlds-stage-lab{min-height:22rem}
 .umbral-datum{border-radius:47% 53% 46% 54%/52% 44% 56% 48%;background:linear-gradient(135deg,rgba(17,24,36,.84),rgba(8,11,17,.72));backdrop-filter:blur(14px)}.umbral-datum-number{padding-inline:1rem}.umbral-datum-arcana{border-radius:45% 55% 52% 48%/58% 46% 54% 42%}.tarot-card{border-radius:8px 8px 14px 8px}.umbral-day-cluster>button,.umbral-pulse-card{border-radius:1.15rem .85rem 1.2rem .75rem!important;background:linear-gradient(125deg,rgba(22,28,40,.56),rgba(8,11,17,.2))!important;backdrop-filter:blur(11px)}
 .worlds-stage-lab::before{width:min(91vw,35rem);border-color:color-mix(in srgb,var(--zodiac-color) 28%,rgba(201,168,106,.1));box-shadow:0 0 70px color-mix(in srgb,var(--zodiac-color) 8%,transparent)}.world-flower-lab{filter:drop-shadow(0 22px 34px rgba(0,0,0,.3))}.lab-world-petal{cursor:pointer}.lab-world-petal:hover .lab-petal-surface,.lab-world-petal:focus .lab-petal-surface{filter:brightness(1.16) saturate(1.08)}
 .balance-home-actions{margin:.2rem auto 0;width:min(100%,32rem);padding:.25rem;border:1px solid rgba(201,168,106,.16);border-radius:1.4rem 1rem 1.4rem 1rem;background:rgba(11,16,24,.42);backdrop-filter:blur(14px)}.balance-home-reading{margin:0 auto .1rem;padding:0;border-radius:0;background:transparent;backdrop-filter:none}.balance-home-caption{margin-top:.45rem}.balance-home-value strong{text-shadow:0 12px 30px rgba(0,0,0,.42)}
 .nucleus-home-gate{border:1px solid rgba(129,115,183,.26);border-radius:46% 54% 48% 52%/42% 56% 44% 58%;box-shadow:0 28px 70px rgba(0,0,0,.24);background:radial-gradient(circle at 46% 20%,rgba(129,115,183,.18),transparent 47%),rgba(9,13,21,.52);backdrop-filter:blur(15px)}.nucleus-home-notes button{border-radius:50%!important;background:rgba(13,18,29,.72)!important}.nucleus-home-notes button.hint{background:#c9a86a!important;color:#080b11!important;box-shadow:0 0 18px rgba(201,168,106,.45)}.nucleus-home-hint{border-radius:999px}.nucleus-capture-lab{padding:.85rem 1.05rem .8rem;border:1px solid rgba(129,115,183,.22);border-radius:1.8rem 1.25rem 2.7rem 1.1rem/1.4rem 2.4rem 1.35rem 2.1rem;background:rgba(9,13,21,.46);backdrop-filter:blur(14px)}.nucleus-capture-lab textarea{border-radius:1.15rem 1.15rem 1.9rem 1.15rem}.nucleus-capture-lab button{border-radius:999px}
-.golden-daruma-practice{padding:clamp(.7rem,1.6vw,1.05rem);border:1px solid color-mix(in srgb,var(--sign-color) 22%,rgba(201,168,106,.18));border-radius:1.8rem 1.1rem 2.8rem 1.25rem/1.3rem 2.25rem 1.6rem 2.2rem;background:linear-gradient(135deg,color-mix(in srgb,var(--sign-color) 7%,rgba(8,11,17,.5)),rgba(8,11,17,.22));backdrop-filter:blur(15px)}.golden-daruma-capture>button{border-radius:999px}.golden-daruma-contemplate{border-radius:999px;padding:.55rem .9rem;border:1px solid rgba(201,168,106,.28);background:rgba(8,11,17,.28)}
+.golden-daruma-practice{padding:clamp(.7rem,1.6vw,1.05rem);border:1px solid color-mix(in srgb,var(--sign-color) 22%,rgba(201,168,106,.18));border-radius:1.8rem 1.1rem 2.8rem 1.25rem/1.3rem 2.25rem 1.6rem 2.2rem;background:linear-gradient(135deg,color-mix(in srgb,var(--sign-color) 7%,rgba(8,11,17,.5)),rgba(8,11,17,.22));backdrop-filter:blur(15px)}.golden-daruma-capture>button{border-radius:999px}
 .lab-mobile-nav{border-radius:999px!important;background:linear-gradient(135deg,rgba(14,20,31,.95),rgba(8,11,17,.88))!important;box-shadow:0 16px 40px rgba(0,0,0,.36),inset 0 1px rgba(234,214,167,.08)}.lab-mobile-nav button{border-radius:999px!important}.mobile-axis-active{background:color-mix(in srgb,var(--zodiac-color) 11%,transparent)!important}
-@media(max-width:760px){.umbral-light-rays{opacity:.36}.ritual-stage-lab{min-height:0}.axis-home-lab{padding:.05rem 0 .3rem;border-radius:0}.axis-home-lab:not(:has(.umbral-threshold-notes)){min-height:calc(100svh - 10rem)}.nucleus-home-gate{border-radius:2rem 1.45rem 2.7rem 1.25rem}.nucleus-capture-lab,.golden-daruma-practice{border-radius:1.4rem 1rem 2.1rem 1rem}.umbral-datum{transform:scale(.9)}.golden-daruma-capture textarea{min-height:3.6rem}}
-@media(min-width:1024px){.aureo-content-width{max-width:72rem}.axis-home-lab{padding:.15rem 0 .3rem}.axis-home-lab:not(:has(.umbral-threshold-notes)){min-height:calc(100svh - 4.5rem)}.axis-heading-lab{padding:.05rem 0 .4rem}.axis-welcome-title{font-size:clamp(2.05rem,2.8vw,2.55rem)}.ritual-stage-lab{min-height:0}.umbral-threshold-notes{padding-bottom:.5rem}.world-flower-lab{width:min(58vw,20rem)}.worlds-stage-lab::before{width:min(66vw,27rem)}.balance-field-lab{min-height:0}.balance-tree-entry{width:min(100%,23rem)}.nucleus-cloth-lab{max-width:17.5rem!important}.golden-daruma-home{width:min(100%,38rem);grid-template-columns:minmax(12rem,14.5rem) minmax(16rem,1fr);gap:1.15rem}}
-@media(prefers-reduced-motion:reduce){.desktop-axis-nav button:hover{transform:none}.lab-world-petal:hover .lab-petal-surface{filter:none}}
+@media(max-width:760px){.umbral-light-rays{opacity:.36}.tailwind-lab[data-lumen="dia"] .umbral-light-rays{opacity:.55}.tailwind-lab[data-lumen="noche"] .umbral-light-rays{opacity:.22}.ritual-stage-lab{min-height:0}.ritual-stage-lab>.umbral-carta,.umbral-carta{min-height:13.5rem}.axis-home-lab{padding:.05rem 0 .2rem;border-radius:0}.axis-home-lab:not(:has(.umbral-threshold-notes)){min-height:calc(100svh - 10rem)}.nucleus-home-gate{border-radius:2rem 1.45rem 2.7rem 1.25rem}.nucleus-capture-lab,.golden-daruma-practice{border-radius:1.4rem 1rem 2.1rem 1rem}.umbral-datum{transform:scale(.86)}.golden-daruma-capture textarea{min-height:3.6rem}}
+@media(min-width:1024px){.aureo-content-width{max-width:72rem}.axis-home-lab{padding:.15rem 0 .3rem}.axis-home-lab:not(:has(.umbral-threshold-notes)){min-height:calc(100svh - 4.5rem)}.axis-heading-lab{padding:.05rem 0 .4rem}.axis-welcome-title{font-size:clamp(2.05rem,2.8vw,2.55rem)}.umbral-heading .axis-welcome-title{font-size:clamp(1.12rem,1.8vw,1.42rem)}.ritual-stage-lab{min-height:0}.umbral-threshold-notes{padding-bottom:.5rem}.world-flower-lab{width:min(58vw,20rem)}.worlds-stage-lab::before{width:min(66vw,27rem)}.balance-field-lab{min-height:0}.balance-tree-entry{width:min(100%,23rem)}.nucleus-cloth-lab{max-width:17.5rem!important}.golden-daruma-home{width:min(100%,38rem);grid-template-columns:minmax(12rem,14.5rem) minmax(16rem,1fr);gap:1.15rem}}
+@media(prefers-reduced-motion:reduce){.desktop-axis-nav button:hover{transform:none}.lab-world-petal:hover .lab-petal-surface{filter:none}.aureo-moon,.umbral-light-rays{transition-duration:1ms}}
 </style>

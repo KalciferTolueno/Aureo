@@ -106,7 +106,7 @@ onMounted(() => {
   gl.canvas.style.height = '100%'
   container.value.appendChild(gl.canvas)
 
-  const uniforms = {
+  const nextUniforms = {
     iTime: { value: 0 },
     iResolution: { value: [1, 1] },
     rayPos: { value: [0, 0] },
@@ -118,18 +118,18 @@ onMounted(() => {
     pointerInfluence: { value: props.pointerInfluence },
     mousePos: { value: [0.5, 0.5] },
   }
-  const mesh = new Mesh(gl, { geometry: new Triangle(gl), program: new Program(gl, { vertex, fragment, uniforms }) })
+  const mesh = new Mesh(gl, { geometry: new Triangle(gl), program: new Program(gl, { vertex, fragment, uniforms: nextUniforms }) })
 
   const resize = () => {
     if (!container.value || !renderer) return
     renderer.setSize(container.value.clientWidth, container.value.clientHeight)
-    uniforms.iResolution.value = [gl.canvas.width, gl.canvas.height]
-    uniforms.rayPos.value = [gl.canvas.width * 0.5, -gl.canvas.height * 0.2]
+    nextUniforms.iResolution.value = [gl.canvas.width, gl.canvas.height]
+    nextUniforms.rayPos.value = [gl.canvas.width * 0.5, -gl.canvas.height * 0.2]
   }
   const render = (time: number) => {
     if (!renderer || !visible || props.paused) return
     if (time - lastRender >= 1000 / props.fps) {
-      uniforms.iTime.value = time * 0.001
+      nextUniforms.iTime.value = time * 0.001
       renderer.render({ scene: mesh })
       lastRender = time
     }
@@ -142,7 +142,7 @@ onMounted(() => {
   const pointer = (event: PointerEvent) => {
     if (!container.value) return
     const bounds = container.value.getBoundingClientRect()
-    uniforms.mousePos.value = [(event.clientX - bounds.left) / bounds.width, (event.clientY - bounds.top) / bounds.height]
+    nextUniforms.mousePos.value = [(event.clientX - bounds.left) / bounds.width, (event.clientY - bounds.top) / bounds.height]
   }
 
   resizeObserver = new ResizeObserver(resize)
@@ -157,6 +157,12 @@ onMounted(() => {
   removePointerListener = () => window.removeEventListener('pointermove', pointer)
   resize()
   watch(() => props.paused, scheduleRender)
+  watch(() => [props.color, props.spread, props.length, props.speed] as const, () => {
+    nextUniforms.raysColor.value = rgb(props.color)
+    nextUniforms.lightSpread.value = props.spread
+    nextUniforms.rayLength.value = props.length
+    nextUniforms.raysSpeed.value = props.speed
+  })
 })
 
 onUnmounted(() => {

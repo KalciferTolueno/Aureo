@@ -91,8 +91,25 @@ export function umbralDateLabel(date = new Date()) {
   return `${weekday} ${date.getDate()}`
 }
 
-export function lumenFromHour(hour = new Date().getHours()): 'dia' | 'noche' {
+export type LumenMode = 'auto' | 'dia' | 'noche'
+export type LumenResolved = 'dia' | 'noche'
+
+export function lumenFromHour(hour = new Date().getHours()): LumenResolved {
   return hour >= 6 && hour < 20 ? 'dia' : 'noche'
+}
+
+export function resolveLumen(pref: LumenMode | null | undefined, hour = new Date().getHours()): LumenResolved {
+  if (pref === 'dia' || pref === 'noche') return pref
+  return lumenFromHour(hour)
+}
+
+export const DAILY_ARCANA_VISIBLE_DAYS = 7
+
+export function recentDailyArcana<T extends { fecha: string }>(
+  items: T[],
+  limit = DAILY_ARCANA_VISIBLE_DAYS,
+) {
+  return [...items].sort((a, b) => b.fecha.localeCompare(a.fecha)).slice(0, limit)
 }
 
 export function nextMaximIndex(current: number, count = MAXIMS.length) {
