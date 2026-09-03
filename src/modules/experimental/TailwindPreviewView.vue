@@ -11,7 +11,6 @@ import TailwindWorkspace from './tailwind/TailwindWorkspace.vue'
 import VueBitsLightRays from './tailwind/VueBitsLightRays.vue'
 import UmbralMoonStrip from './tailwind/UmbralMoonStrip.vue'
 import CaptureSeal from './tailwind/CaptureSeal.vue'
-import AureoSettings from './settings/AureoSettings.vue'
 import OpeningMoment from './onboarding/OpeningMoment.vue'
 import { playChord, playTone, unlockTone } from '@/composables/useTone'
 import { MELODY_NOTES, recoverMelodyNotes } from '@/domain/melody'
@@ -89,7 +88,6 @@ const nucleusHinting = ref(false)
 const nucleusError = ref('')
 const notes = MELODY_NOTES
 const balanceAmountVisible = ref(false)
-const settingsOpen = ref(false)
 const openingDone = ref(false)
 const balanceMovementForm = reactive({ tipo: 'gasto' as 'ingreso' | 'gasto', monto: 0, categoria: 'El nido', nota: '', recurrente: false })
 const balanceGoalForm = reactive({ nombre: '', objetivo: 0, color: '#C9A86A' })
@@ -523,7 +521,7 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer) })
         </nav>
 
         <div class="tw:relative tw:z-10 tw:mt-auto tw:border-t tw:border-oro/15 tw:pt-5">
-          <button type="button" class="tw:flex tw:min-h-11 tw:w-full tw:items-center tw:gap-3 tw:rounded-xl tw:border-0 tw:bg-transparent tw:px-2 tw:py-1 tw:text-left tw:text-inherit" aria-label="Abrir configuración de mi Áureo" @click="settingsOpen = true">
+          <button type="button" class="tw:flex tw:min-h-11 tw:w-full tw:items-center tw:gap-3 tw:rounded-xl tw:border-0 tw:bg-transparent tw:px-2 tw:py-1 tw:text-left tw:text-inherit" aria-label="Abrir configuración de mi Áureo" @click="router.push('/configuracion')">
             <span class="tw:grid tw:size-10 tw:place-items-center tw:rounded-full tw:bg-oro-claro tw:font-sans tw:text-xs tw:font-semibold tw:text-noche">{{ initials }}</span>
             <div class="tw:min-w-0">
               <strong class="tw:block tw:truncate tw:text-sm tw:font-light">{{ profile.name || 'Tu espacio' }}</strong>
@@ -641,8 +639,8 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer) })
                       >
                         <ellipse class="lab-petal-shadow" cx="150" cy="83" rx="38" ry="66"/>
                         <ellipse class="lab-petal-surface" cx="150" cy="83" rx="38" ry="66" :fill="`url(#lab-petal-${world.gradient})`"/>
-                        <!-- Contrarrotada sobre su propio punto: el nombre queda horizontal y fuera del pétalo. -->
-                        <text class="lab-petal-label" x="150" y="-4" text-anchor="middle" dominant-baseline="middle" :transform="`rotate(${-world.angle} 150 -4)`">{{ world.label }}</text>
+                        <!-- 90° base para correr a lo largo del eje largo; invertido en los pétalos inferiores (Decretos 144°, Hobbies 216°). -->
+                        <text class="lab-petal-label" x="150" y="83" text-anchor="middle" dominant-baseline="middle" :transform="`rotate(${[72,144,216].includes(world.angle) ? 270 : 90} 150 83)`">{{ world.label }}</text>
                       </g>
                       <circle class="lab-flower-core" cx="150" cy="150" r="31" fill="url(#lab-flower-core)"/>
                       <circle class="lab-flower-seed" cx="150" cy="150" r="10"/>
@@ -896,14 +894,13 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer) })
         type="button"
         class="tw:relative tw:grid tw:min-h-12 tw:min-w-0 tw:place-content-center tw:gap-0.5 tw:rounded-xl tw:border-0 tw:bg-transparent tw:px-0.5 tw:font-sans tw:text-[0.55rem] tw:font-medium tw:text-marfil-suave"
         aria-label="Abrir configuración de mi Áureo"
-        @click="settingsOpen = true"
+        @click="router.push('/configuracion')"
       >
         <span class="mobile-axis-icon tw:mx-auto tw:grid tw:size-7 tw:place-items-center tw:rounded-full"><AppIcon name="settings" class="tw:size-4" /></span>
         <span class="tw:truncate">Áureo</span>
       </button>
     </nav>
     <CaptureSeal v-model:open="captureOpen" v-model:text="captureText" :visible="showCaptureSeal" :step="captureStep" @submit="submitCapture" @classify="classifyCapture" />
-    <AureoSettings v-model:open="settingsOpen" />
     <OpeningMoment v-if="selectedId === 'umbral' && !activeDetail && !openingDone" @done="openingDone = true" />
   </main>
 </template>
@@ -1171,10 +1168,10 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer) })
 .lab-world-petal { cursor: pointer; transition: filter var(--dur-2) cubic-bezier(.23,1,.32,1); }
 .lab-petal-shadow { fill: rgba(5,6,10,.35); transform: translateY(7px); }
 .lab-petal-surface { stroke: rgba(244,239,229,.26); stroke-width: 1px; transform-box:fill-box; transform-origin:center; animation: petal-current 6.4s ease-in-out infinite; animation-delay:calc(var(--petal-index) * -.72s); }
-.lab-petal-label { fill: #f4efe5; font: 500 14px/1 system-ui, sans-serif; letter-spacing: .02em; paint-order: stroke; pointer-events: none; stroke: rgba(8,11,17,.72); stroke-width: 3px; stroke-linejoin: round; }
+.lab-petal-label { fill: #f4efe5; font: 500 var(--texto-3)/1 system-ui, sans-serif; letter-spacing: .02em; paint-order: stroke; pointer-events: none; stroke: rgba(8,11,17,.6); stroke-width: 4px; stroke-linejoin: round; }
 .lab-world-petal:is(:hover, :focus-visible) .lab-petal-label { fill: #fff9e8; }
-.lab-flower-core { filter: drop-shadow(0 10px 18px rgba(0,0,0,.3)); transform-origin:center; animation: flower-core-pulse 4.8s ease-in-out infinite; }
-.lab-flower-seed { fill: #080b11; transform-origin:center; animation: flower-seed-light 3.2s ease-in-out infinite; }
+.lab-flower-core { filter: drop-shadow(0 10px 18px rgba(0,0,0,.3)); }
+.lab-flower-seed { fill: #080b11; }
 .lab-world-petal:hover, .lab-world-petal:focus-visible { filter: brightness(1.12) saturate(1.06); }
 .lab-world-petal:focus-visible { outline: none; }
 /* Marfil, no oro: el anillo tiene que leerse también sobre los pétalos dorados. */

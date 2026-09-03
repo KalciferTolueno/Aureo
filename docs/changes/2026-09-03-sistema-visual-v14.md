@@ -48,7 +48,7 @@ El mapeo se hizo con codemods reproducibles: 160 declaraciones de `font-size`, 5
 
 ## Configuración de mi Áureo
 
-Se reconstruyó el panel: jerarquía por rótulos en sans y contenido en serif, la promesa de privacidad como texto con filete lateral en vez de caja dentro de caja, `Lo que cuido` como interruptor real (`role="switch"`, estado visible sin adivinar), cierre con Escape y foco gestionado. **Borrar este Áureo** dejó de ser un botón rojo a ancho completo: es un enlace de texto al final, con confirmación en dos toques.
+Se reconstruyó como página propia en `/configuracion`, usando el mismo fondo, encabezado, filete y sistema de contenido que las demás páginas de la experiencia Tailwind. La promesa de privacidad se presenta como texto con filete lateral en vez de caja dentro de caja, `Lo que cuido` es un interruptor real (`role="switch"`), y **Borrar este Áureo** dejó de ser un botón rojo a ancho completo: es un enlace de texto al final, con confirmación en dos toques.
 
 ## Movimiento
 

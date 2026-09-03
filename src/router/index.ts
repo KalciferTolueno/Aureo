@@ -9,6 +9,12 @@ const router = createRouter({
       component: () => import('@/modules/experimental/TailwindPreviewView.vue'),
       meta: { full: true, order: 0, depth: 0 },
     },
+    {
+      path: '/configuracion',
+      name: 'configuracion-aureo',
+      component: () => import('@/modules/experimental/settings/AureoSettingsPage.vue'),
+      meta: { full: true, order: 0, depth: 0 },
+    },
     { path: '/laboratorio-tailwind', redirect: '/' },
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],
