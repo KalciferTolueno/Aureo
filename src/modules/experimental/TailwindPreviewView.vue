@@ -11,6 +11,7 @@ import TailwindWorkspace from './tailwind/TailwindWorkspace.vue'
 import VueBitsLightRays from './tailwind/VueBitsLightRays.vue'
 import UmbralMoonStrip from './tailwind/UmbralMoonStrip.vue'
 import CaptureSeal from './tailwind/CaptureSeal.vue'
+import AureoSettingsPage from './settings/AureoSettingsPage.vue'
 import OpeningMoment from './onboarding/OpeningMoment.vue'
 import { playChord, playTone, unlockTone } from '@/composables/useTone'
 import { MELODY_NOTES, recoverMelodyNotes } from '@/domain/melody'
@@ -60,6 +61,7 @@ function initialAxis(queryAxis: unknown): AxisId {
 
 const route = useRoute()
 const router = useRouter()
+const settingsActive = computed(() => route.name === 'configuracion-aureo')
 const profile = useProfileStore()
 const selectedId = ref<AxisId>(initialAxis(route.query.axis))
 const activeDetail = ref<DetailId | null>(typeof route.query.detail === 'string' && detailIds.includes(route.query.detail as DetailId) ? route.query.detail as DetailId : null)
@@ -191,7 +193,7 @@ function chooseAxis(id: AxisId) {
   activeDetail.value = null
   detailAction.value = ''
   selectedNucleusThoughtId.value = null
-  if (route.name === 'laboratorio-tailwind') void router.replace({ name: 'laboratorio-tailwind', query: { axis: id } })
+  void router.replace({ name: 'laboratorio-tailwind', query: { axis: id } })
   returnToTop('auto')
 }
 
@@ -263,6 +265,11 @@ async function saveBalanceGoal() {
 function closeDetail() {
   activeDetail.value = null
   detailAction.value = ''
+  void router.replace({ name: 'laboratorio-tailwind', query: { axis: selectedId.value } })
+  returnToTop()
+}
+
+function closeSettings() {
   void router.replace({ name: 'laboratorio-tailwind', query: { axis: selectedId.value } })
   returnToTop()
 }
@@ -484,7 +491,7 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer) })
 <template>
   <main class="tailwind-lab tw:min-h-svh tw:bg-noche tw:font-aureo tw:text-marfil tw:selection:bg-oro/30" :style="zodiacStyle" :data-zodiac="zodiacKey" :data-lumen="selectedId === 'umbral' ? resolvedLumen : undefined">
     <VueBitsLightRays
-      v-if="selectedId === 'umbral' && !activeDetail"
+      v-if="selectedId === 'umbral' && !activeDetail && !settingsActive"
       class-name="umbral-light-rays"
       :color="resolvedLumen === 'dia' ? '#ead9a8' : '#c9a86a'"
       :speed="0.38"
@@ -510,8 +517,8 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer) })
             :key="axis.id"
             type="button"
             class="tw:group tw:relative tw:grid tw:min-h-12 tw:w-full tw:grid-cols-[2rem_1fr_auto] tw:items-center tw:gap-3 tw:rounded-xl tw:border-0 tw:bg-transparent tw:px-3 tw:text-left tw:font-sans tw:text-sm tw:font-medium tw:text-marfil-suave tw:transition-colors tw:duration-200 tw:ease-aureo tw:hover:text-marfil"
-            :class="selectedId === axis.id ? 'desktop-axis-active tw:text-oro-claro' : ''"
-            :aria-pressed="selectedId === axis.id"
+            :class="!settingsActive && selectedId === axis.id ? 'desktop-axis-active tw:text-oro-claro' : ''"
+            :aria-pressed="!settingsActive && selectedId === axis.id"
             @click="chooseAxis(axis.id)"
           >
             <span class="desktop-axis-icon tw:grid tw:size-8 tw:place-items-center tw:rounded-full"><AppIcon :name="axis.icon" class="tw:size-4" /></span>
@@ -521,7 +528,7 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer) })
         </nav>
 
         <div class="tw:relative tw:z-10 tw:mt-auto tw:border-t tw:border-oro/15 tw:pt-5">
-          <button type="button" class="tw:flex tw:min-h-11 tw:w-full tw:items-center tw:gap-3 tw:rounded-xl tw:border-0 tw:bg-transparent tw:px-2 tw:py-1 tw:text-left tw:text-inherit" aria-label="Abrir configuración de mi Áureo" @click="router.push('/configuracion')">
+          <button type="button" class="tw:flex tw:min-h-11 tw:w-full tw:items-center tw:gap-3 tw:rounded-xl tw:border-0 tw:bg-transparent tw:px-2 tw:py-1 tw:text-left tw:text-inherit" :class="settingsActive ? 'desktop-axis-active tw:text-oro-claro' : ''" aria-label="Abrir configuración de mi Áureo" :aria-pressed="settingsActive" @click="router.push('/configuracion')">
             <span class="tw:grid tw:size-10 tw:place-items-center tw:rounded-full tw:bg-oro-claro tw:font-sans tw:text-xs tw:font-semibold tw:text-noche">{{ initials }}</span>
             <div class="tw:min-w-0">
               <strong class="tw:block tw:truncate tw:text-sm tw:font-light">{{ profile.name || 'Tu espacio' }}</strong>
@@ -535,7 +542,8 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer) })
         <div class="aureo-content-shell tw:px-5 tw:py-3 tw:sm:px-8 tw:sm:py-5 tw:lg:py-6">
           <div class="aureo-content-width tw:mx-auto tw:w-full">
             <section aria-live="polite">
-              <TailwindWorkspace v-if="activeDetail" :detail="activeDetail" :initial-action="detailAction" :intention-draft="intentionDraft" @close="closeDetail" @changed="refreshCounts" @draft-consumed="intentionDraft = ''" />
+              <AureoSettingsPage v-if="settingsActive" @close="closeSettings" />
+              <TailwindWorkspace v-else-if="activeDetail" :detail="activeDetail" :initial-action="detailAction" :intention-draft="intentionDraft" @close="closeDetail" @changed="refreshCounts" @draft-consumed="intentionDraft = ''" />
               <div v-else class="axis-home-lab tw:relative tw:min-w-0">
                 <div v-if="selectedId === 'umbral'" class="axis-heading-lab umbral-heading" data-axis="umbral">
                     <div class="umbral-heading-bar">
@@ -882,9 +890,9 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer) })
         :key="`mobile-${axis.id}`"
         type="button"
         class="tw:relative tw:grid tw:min-h-12 tw:min-w-0 tw:place-content-center tw:gap-0.5 tw:rounded-xl tw:border-0 tw:bg-transparent tw:px-0.5 tw:font-sans tw:text-[0.55rem] tw:font-medium tw:text-marfil-suave"
-        :class="selectedId === axis.id ? 'mobile-axis-active tw:text-oro-claro' : ''"
+        :class="!settingsActive && selectedId === axis.id ? 'mobile-axis-active tw:text-oro-claro' : ''"
         :aria-label="axis.label"
-        :aria-pressed="selectedId === axis.id"
+        :aria-pressed="!settingsActive && selectedId === axis.id"
         @click="chooseAxis(axis.id)"
       >
         <span class="mobile-axis-icon tw:mx-auto tw:grid tw:size-7 tw:place-items-center tw:rounded-full"><AppIcon :name="axis.icon" class="tw:size-4" /></span>
@@ -893,15 +901,17 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer) })
       <button
         type="button"
         class="tw:relative tw:grid tw:min-h-12 tw:min-w-0 tw:place-content-center tw:gap-0.5 tw:rounded-xl tw:border-0 tw:bg-transparent tw:px-0.5 tw:font-sans tw:text-[0.55rem] tw:font-medium tw:text-marfil-suave"
+        :class="settingsActive ? 'mobile-axis-active tw:text-oro-claro' : ''"
         aria-label="Abrir configuración de mi Áureo"
+        :aria-pressed="settingsActive"
         @click="router.push('/configuracion')"
       >
         <span class="mobile-axis-icon tw:mx-auto tw:grid tw:size-7 tw:place-items-center tw:rounded-full"><AppIcon name="settings" class="tw:size-4" /></span>
         <span class="tw:truncate">Áureo</span>
       </button>
     </nav>
-    <CaptureSeal v-model:open="captureOpen" v-model:text="captureText" :visible="showCaptureSeal" :step="captureStep" @submit="submitCapture" @classify="classifyCapture" />
-    <OpeningMoment v-if="selectedId === 'umbral' && !activeDetail && !openingDone" @done="openingDone = true" />
+    <CaptureSeal v-model:open="captureOpen" v-model:text="captureText" :visible="showCaptureSeal && !settingsActive" :step="captureStep" @submit="submitCapture" @classify="classifyCapture" />
+    <OpeningMoment v-if="selectedId === 'umbral' && !activeDetail && !settingsActive && !openingDone" @done="openingDone = true" />
   </main>
 </template>
 

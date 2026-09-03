@@ -174,7 +174,7 @@ El inventario exacto de solicitudes, archivos modificados, contratos preservados
 
 - Quien llega sin `onboarding_completo` recorre el ritual de junio: bienvenida M6, privacidad, nombre íntimo, origen, revelación del signo, correo local, llave musical de tres notas, Lo que cuido y transición a Umbral. No hay decreto ni botón intermedio “Esta es mi llave”.
 - La melodía usa el mismo timbre seno y las mismas frecuencias que la copia histórica de Vercel. El hash `Do|Re|Mi` abre Núcleo. Las notas suenan al tocarlas; el acorde final pulsa al acertar.
-- **Configuración de mi Áureo** se abre desde el perfil (escritorio) o el último ítem de la barra móvil (Áureo) como página propia en `/configuracion`, con el mismo encabezado, filete y fondo de la experiencia Tailwind. Incluye la promesa de privacidad, Lo que cuido, copia/restauración y borrado con doble toque; no volver a convertirla en tarjeta flotante.
+- **Configuración de mi Áureo** se abre desde el perfil (escritorio) o el último ítem de la barra móvil (Áureo) como vista interna en `/configuracion`. Conserva el armazón y la navegación lateral/inferior de la aplicación; solo reemplaza el área de contenido, igual que los detalles de los ejes. Incluye la promesa de privacidad, Lo que cuido, copia/restauración y borrado con doble toque; no volver a convertirla en tarjeta flotante ni en una página aislada.
 - **Momento de apertura** aparece una vez al día al entrar a Umbral, con frase por signo. No cambia el fondo Noche.
 
 ### Renovación visual v1.3

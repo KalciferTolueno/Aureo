@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
 import AppIcon from '@/shared/components/AppIcon.vue'
 import { clearAureoData, exportBackup, importBackup } from '@/data/repositories'
 import { useProfileStore } from '@/stores/profile'
 
-const router = useRouter()
+defineEmits<{ close: [] }>()
 const profile = useProfileStore()
 const notice = ref('')
 const fileField = ref<HTMLInputElement | null>(null)
@@ -66,12 +65,12 @@ async function wipe() {
 </script>
 
 <template>
-  <div class="sp-root tw:min-h-svh tw:bg-noche tw:font-aureo tw:text-marfil">
+  <div class="sp-root">
     <!-- Fondo suave compartido con el resto de la app -->
     <div class="sp-aura" aria-hidden="true" />
 
     <header class="sp-header">
-      <button type="button" class="sp-back" aria-label="Volver" @click="router.back()">
+      <button type="button" class="sp-back" aria-label="Volver" @click="$emit('close')">
         <AppIcon name="arrow-left" />
       </button>
       <div class="sp-identity">
@@ -80,7 +79,7 @@ async function wipe() {
       </div>
     </header>
 
-    <main class="sp-body">
+    <div class="sp-body">
       <!-- Promesa -->
       <section class="sp-section sp-promise">
         <h2>Mi promesa de privacidad</h2>
@@ -118,7 +117,7 @@ async function wipe() {
         </button>
         <small>Borra todo lo que has guardado en este dispositivo. No se puede deshacer.</small>
       </section>
-    </main>
+    </div>
 
     <p v-if="notice" class="sp-notice" role="status">{{ notice }}</p>
   </div>
@@ -126,9 +125,9 @@ async function wipe() {
 
 <style scoped>
 /* ── raíz ── */
-.sp-root { position: relative; isolation: isolate; }
+.sp-root { position: relative; min-height: calc(100svh - 3rem); isolation: isolate; color: var(--texto); }
 .sp-aura {
-  position: fixed; z-index: -1; inset: 0;
+  position: absolute; z-index: -1; inset: -2rem;
   background:
     radial-gradient(ellipse at 80% 0, rgba(201,168,106,.12), transparent 55%),
     radial-gradient(ellipse at 20% 100%, rgba(201,168,106,.06), transparent 45%);
