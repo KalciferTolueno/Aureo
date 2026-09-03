@@ -44,9 +44,9 @@ onMounted(async () => {
 
 <style scoped>
 .opening { position: fixed; z-index: 80; inset: 0; display: grid; place-items: center; align-content: center; gap: 1rem; background: #080b11; color: #f4efe5; text-align: center; cursor: pointer; animation: open-in 1s ease both; }
-.opening span { color: #c9a86a; font-size: 4.2rem; line-height: 1; animation: open-scale .8s cubic-bezier(.16,1,.3,1) both; }
-.opening strong { font: 200 1.6rem/1 Fraunces, 'Aureo Serif', Georgia, serif; }
-.opening p { margin: 0; max-width: 18rem; color: #c9a86a; font: italic 300 1.1rem/1.5 Spectral, 'Aureo Serif', Georgia, serif; }
+.opening span { color: #c9a86a; font-size: var(--texto-hero); line-height: 1; animation: open-scale .8s cubic-bezier(.16,1,.3,1) both; }
+.opening strong { font: 200 var(--texto-7)/1 Fraunces, 'Aureo Serif', Georgia, serif; }
+.opening p { margin: 0; max-width: 18rem; color: #c9a86a; font: italic 300 var(--texto-5)/1.5 Spectral, 'Aureo Serif', Georgia, serif; }
 @keyframes open-in { from { opacity: 0; } }
 @keyframes open-scale { from { transform: scale(.8); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) {

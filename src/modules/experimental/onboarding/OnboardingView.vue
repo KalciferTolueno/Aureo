@@ -249,37 +249,37 @@ onUnmounted(() => timers.forEach(clearTimeout))
 .m6 { width: min(42vw, 9.5rem); height: auto; filter: drop-shadow(0 0 18px rgba(201,168,106,.35)); }
 .m6.small { width: 3.2rem; }
 .breath { animation: m6-breath 3.5s ease-in-out infinite; }
-.welcome-copy { display: grid; gap: .85rem; margin: 0; max-width: 22rem; color: #f4efe5; font: 200 1.45rem/1.45 Fraunces, 'Aureo Serif', Georgia, serif; }
+.welcome-copy { display: grid; gap: .85rem; margin: 0; max-width: 22rem; color: #f4efe5; font: 200 var(--texto-6)/1.45 Fraunces, 'Aureo Serif', Georgia, serif; }
 .welcome-copy span { animation: copy-in 1.1s ease both; }
 .welcome-copy span:last-child { animation-delay: 1.8s; }
-h1 { margin: 0; color: #f4efe5; font: 200 1.45rem/1.2 Fraunces, 'Aureo Serif', Georgia, serif; }
-p { margin: 0; max-width: 36ch; color: #d8d1c6; font: 300 1rem/1.7 Spectral, 'Aureo Serif', Georgia, serif; }
-.soft { color: rgba(245,240,230,.7); font-size: .92rem; }
-.gold-line { margin-block: 1rem .25rem; color: #c9a86a; font: 300 1.05rem/1.5 Spectral, 'Aureo Serif', Georgia, serif; }
-.gold-name { color: #c9a86a; font: 200 1.2rem/1 Fraunces, 'Aureo Serif', Georgia, serif; }
-.cta { min-height: 48px; padding: .8rem 2.4rem; border: 1px solid #c9a86a; border-radius: 999px; background: transparent; color: #c9a86a; font: 300 .95rem/1 Fraunces, 'Aureo Serif', Georgia, serif; cursor: pointer; animation: copy-in .6s ease both; }
+h1 { margin: 0; color: #f4efe5; font: 200 var(--texto-6)/1.2 Fraunces, 'Aureo Serif', Georgia, serif; }
+p { margin: 0; max-width: 36ch; color: #d8d1c6; font: 300 var(--texto-4)/1.7 Spectral, 'Aureo Serif', Georgia, serif; }
+.soft { color: rgba(245,240,230,.7); font-size: var(--texto-3); }
+.gold-line { margin-block: 1rem .25rem; color: #c9a86a; font: 300 var(--texto-4)/1.5 Spectral, 'Aureo Serif', Georgia, serif; }
+.gold-name { color: #c9a86a; font: 200 var(--texto-5)/1 Fraunces, 'Aureo Serif', Georgia, serif; }
+.cta { min-height: 48px; padding: .8rem 2.4rem; border: 1px solid #c9a86a; border-radius: var(--radio-pill); background: transparent; color: #c9a86a; font: 300 var(--texto-4)/1 Fraunces, 'Aureo Serif', Georgia, serif; cursor: pointer; animation: copy-in .6s ease both; }
 .cta:disabled { opacity: .35; cursor: default; }
-.field, .date-row label { display: grid; gap: .4rem; width: 100%; color: #b9b3aa; font: 300 .82rem/1.3 Spectral, 'Aureo Serif', Georgia, serif; text-align: center; }
-.field input, .date-row input { width: 100%; min-height: 48px; border: 0; border-bottom: 1px solid #c9a86a; border-radius: 0; background: transparent; color: #f5f0e6; font: 300 1.15rem/1.4 Fraunces, 'Aureo Serif', Georgia, serif; text-align: center; caret-color: #ead6a7; outline: 0; }
+.field, .date-row label { display: grid; gap: .4rem; width: 100%; color: #b9b3aa; font: 300 var(--texto-2)/1.3 Spectral, 'Aureo Serif', Georgia, serif; text-align: center; }
+.field input, .date-row input { width: 100%; min-height: 48px; border: 0; border-bottom: 1px solid #c9a86a; border-radius: 0; background: transparent; color: #f5f0e6; font: 300 var(--texto-5)/1.4 Fraunces, 'Aureo Serif', Georgia, serif; text-align: center; caret-color: #ead6a7; outline: 0; }
 .field input::placeholder, .date-row input::placeholder { color: rgba(201,168,106,.6); }
 .date-row { display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: .8rem; width: 100%; }
 .pulse .date-row input { animation: gold-pulse .7s ease; }
-.sign-glyph { display: block; color: #c9a86a; font-size: 4.6rem; line-height: 1; filter: drop-shadow(0 12px 24px rgba(201,168,106,.28)); }
+.sign-glyph { display: block; color: #c9a86a; font-size: var(--texto-hero); line-height: 1; filter: drop-shadow(0 12px 24px rgba(201,168,106,.28)); }
 .sign-glyph.drop { animation: sign-drop .8s cubic-bezier(.16,1,.3,1) both; }
-.sign-number { color: #f5f0e6; font: 200 3rem/1 Fraunces, 'Aureo Serif', Georgia, serif; }
+.sign-number { color: #f5f0e6; font: 200 var(--texto-9)/1 Fraunces, 'Aureo Serif', Georgia, serif; }
 .reveal.preview { animation: sign-wash 3s ease; }
 .melody-progress { display: flex; gap: .55rem; }
 .melody-progress span { width: .7rem; height: .7rem; border: 1px solid rgba(201,168,106,.4); border-radius: 50%; }
 .melody-progress span.filled { background: #c9a86a; }
 .note-grid { display: grid; grid-template-columns: repeat(4, 4.4rem); gap: .55rem; justify-content: center; }
-.note-grid button { min-height: 48px; border: 1px solid rgba(201,168,106,.4); border-radius: 999px; background: transparent; color: #ead6a7; font: 300 .95rem/1 Fraunces, 'Aureo Serif', Georgia, serif; cursor: pointer; }
+.note-grid button { min-height: 48px; border: 1px solid rgba(201,168,106,.4); border-radius: var(--radio-pill); background: transparent; color: #ead6a7; font: 300 var(--texto-4)/1 Fraunces, 'Aureo Serif', Georgia, serif; cursor: pointer; }
 .note-grid.pulse button { animation: gold-pulse .9s ease; }
-.space-card { display: grid; gap: .35rem; width: 100%; padding: 1.1rem 1rem; border: 1px solid #080b11; border-radius: 1.2rem; background: transparent; color: rgba(245,240,230,.5); text-align: left; cursor: pointer; }
-.space-card strong { font: 300 1.15rem/1.2 Fraunces, 'Aureo Serif', Georgia, serif; }
-.space-card span { font: 300 .9rem/1.4 Spectral, 'Aureo Serif', Georgia, serif; }
-.space-card.on { border-color: #c9a86a; color: #f4efe5; box-shadow: inset .4rem 0 0 #c9a86a; }
-.sun-mark { color: #c9a86a; font-size: 3rem; }
-.threshold h1 { font-size: 2.4rem; }
+.space-card { display: grid; gap: .35rem; width: 100%; padding: 1.1rem 1rem; border: 1px solid #080b11; border-radius: var(--radio-md); background: transparent; color: rgba(245,240,230,.5); text-align: left; cursor: pointer; }
+.space-card strong { font: 300 var(--texto-5)/1.2 Fraunces, 'Aureo Serif', Georgia, serif; }
+.space-card span { font: 300 var(--texto-3)/1.4 Spectral, 'Aureo Serif', Georgia, serif; }
+.space-card.on { border-color: #c9a86a; background: rgba(201,168,106,.1); color: #f4efe5; }
+.sun-mark { color: #c9a86a; font-size: var(--texto-9); }
+.threshold h1 { font-size: var(--texto-8); }
 @keyframes m6-breath { 0%,100% { filter: drop-shadow(0 0 10px rgba(201,168,106,.22)); transform: scale(.98); } 50% { filter: drop-shadow(0 0 22px rgba(201,168,106,.5)); transform: scale(1.03); } }
 @keyframes copy-in { from { opacity: 0; transform: translateY(.4rem); } }
 @keyframes sign-drop { from { opacity: 0; transform: translateY(-1.4rem); } }

@@ -42,6 +42,6 @@ defineProps<{ activeIndex: number; label: string }>()
 .strip-shadow { fill: #080b11; }
 .strip-rim { fill: none; stroke: rgba(234, 214, 167, .55); stroke-width: .7; }
 .current .strip-rim { stroke: #c9a86a; }
-.moon-strip-name { margin: 0; color: #c9a86a; font: 300 .78rem/1.3 Georgia, 'Times New Roman', serif; letter-spacing: .04em; }
+.moon-strip-name { margin: 0; color: #c9a86a; font: 300 var(--texto-2)/1.3 Georgia, 'Times New Roman', serif; letter-spacing: .04em; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); }
 </style>

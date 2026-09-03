@@ -145,6 +145,8 @@ No eliminar redirecciones históricas sin una migración y una decisión explíc
 
 ## Registro de la iteración más reciente
 
+El sistema visual v1.4 (03-09-2026) está en `docs/changes/2026-09-03-sistema-visual-v14.md`. Leerlo antes de tocar tipografía, radios, espaciado, movimiento, áreas táctiles, el panel de configuración, la flor de Mundos o el encabezado de Mi Balance.
+
 El inventario exacto de solicitudes, archivos modificados, contratos preservados y validaciones del 28-08-2026 está en `docs/changes/2026-08-28-ajustes-ui-y-acceso-local.md`. Leerlo antes de tocar títulos de portada, Mi Balance, auras, scrollbar o acceso local.
 
 ## Identidad visual y experiencia común
@@ -156,6 +158,10 @@ El inventario exacto de solicitudes, archivos modificados, contratos preservados
 - Navegación lateral en escritorio e inferior en móvil.
 - No usar gamificación, presión, rankings, rachas punitivas ni lenguaje de productividad convencional.
 - Respetar teclado, foco visible, áreas táctiles, contraste, anchuras móviles y `prefers-reduced-motion`.
+- Desde la v1.4 el sistema visual vive en escalas con nombre dentro de `src/shared/styles/tokens.css`: tipografía (`--texto-1`…`--texto-9`, más `--texto-hero` y `--texto-display`), espaciado (`--espacio-0`…`--espacio-6`), radios (`--radio-pill` y `--radio-organico-1`…`-3`), movimiento (`--dur-1`…`--dur-4` sobre `--ease-out` y `--ease-in-out`) y área táctil (`--toque: 44px`). No introducir valores fuera de esas escalas; elegir el escalón más cercano antes de inventar uno.
+- Los iconos se dibujan con `AppIcon`. No usar glifos Unicode ni emoji como iconografía.
+- El serif se reserva para lo que se lee. Los rótulos de sección van en sans, versalitas y con `letter-spacing`.
+- Ningún control por debajo de `--toque`. Si agrandarlo rompe la composición, ampliar el área con un pseudo-elemento en lugar de bajar el mínimo.
 - Los paneles y lecturas flotantes deben permanecer en la misma sección cuando la usuaria lo haya pedido; no introducir navegación innecesaria.
 - El aura compartida de los espacios internos se extiende fuera del encabezado y de la columna de contenido para integrarse con el fondo continuo hasta el borde móvil; ni la animación de entrada ni `.tw-workspace` deben recortarla. El límite exterior permanece en `.tailwind-lab`.
 - El carril del scrollbar raíz usa el mismo fondo Noche (`--cosmos`, `--document-scroll-track: #080b11`) para que el borde derecho de la aplicación no revele una franja transparente.

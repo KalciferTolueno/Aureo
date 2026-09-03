@@ -28,16 +28,45 @@
   --radio-sm: 14px;
   --radio-md: 16px;
   --radio-lg: 16px;
+  --radio-pill: 999px;
+  /* Radios orgánicos: tres presets fijos en lugar de un valor ad-hoc por componente. */
+  --radio-organico-1: 1.05rem .8rem 1.25rem .85rem;
+  --radio-organico-2: 1.6rem 1rem 2.3rem 1.15rem;
+  --radio-organico-3: 2rem 1.25rem 2.7rem 1.15rem;
+
+  /* Escala tipográfica. Siete pasos; nada de texto por debajo de --texto-1. */
+  --texto-1: 0.68rem;
+  --texto-2: 0.78rem;
+  --texto-3: 0.875rem;
+  --texto-4: 1rem;
+  --texto-5: 1.15rem;
+  --texto-6: 1.35rem;
+  --texto-7: 1.75rem;
+  --texto-8: 2.25rem;
+  --texto-9: 3rem;
+  --texto-hero: 4.5rem;
+  --texto-display: clamp(2.1rem, 5.5vw, 3rem);
+
+  --espacio-0: 0.25rem;
   --espacio-1: 0.375rem;
   --espacio-2: 0.625rem;
   --espacio-3: 1rem;
   --espacio-4: 1.5rem;
   --espacio-5: 2.25rem;
   --espacio-6: 3.25rem;
+
+  --toque: 44px;
+
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
-  --transicion: 220ms var(--ease-out);
-  --respuesta: 150ms var(--ease-out);
+  /* Escalera de movimiento: cuatro duraciones, dos curvas. */
+  --dur-1: 120ms;
+  --dur-2: 220ms;
+  --dur-3: 420ms;
+  --dur-4: 800ms;
+  --transicion: var(--dur-2) var(--ease-out);
+  --respuesta: var(--dur-1) var(--ease-out);
+  --capa: var(--dur-3) var(--ease-out);
   --respiracion: 3.5s;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
