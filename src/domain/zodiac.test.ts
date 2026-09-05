@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { personalNumber, zodiacFor } from './zodiac'
+import { personalNumber, SIGN_ORDER, signColors, signLabels, zodiacFor } from './zodiac'
 
 describe('identidad calculada', () => {
   it('resuelve signos alrededor de un cambio de ciclo', () => {
@@ -9,5 +9,13 @@ describe('identidad calculada', () => {
 
   it('reduce la fecha a una clave personal', () => {
     expect(personalNumber('1990-01-01')).toBe(3)
+  })
+
+  it('tiene un matiz propio para cada signo', () => {
+    expect(SIGN_ORDER).toHaveLength(12)
+    for (const key of SIGN_ORDER) {
+      expect(signColors[key]).toMatch(/^#/)
+      expect(signLabels[key]).toBeTruthy()
+    }
   })
 })

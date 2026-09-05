@@ -3,7 +3,7 @@ import type { EntityBase } from '@/domain/types'
 import { remoteCollections } from './sync/catalog'
 import { getDeviceId } from './sync/device'
 
-export const CURRENT_SCHEMA_VERSION = 3
+export const CURRENT_SCHEMA_VERSION = 4
 
 export async function runMigrations() {
   const current = (await storage.get<number>('schema_version')) ?? 1
@@ -31,5 +31,15 @@ export async function runMigrations() {
       await storage.set(collection, migrated)
     }
     await storage.set('schema_version', 3)
+  }
+  if (current < 4) {
+    const hobbies = await storage.get<Array<EntityBase & { momentos?: unknown }>>('hobbies')
+    if (hobbies?.length) {
+      await storage.set('hobbies', hobbies.map((item) => ({
+        ...item,
+        momentos: Array.isArray(item.momentos) ? item.momentos : [],
+      })))
+    }
+    await storage.set('schema_version', 4)
   }
 }

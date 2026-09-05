@@ -122,10 +122,15 @@ test('conecta la portada Tailwind con las funciones reales de cada eje', async (
   await page.getByRole('button', { name: /Hobbies, \d+ registros/ }).click()
   await expect(page).toHaveURL(/\/#\/\?.*detail=world-hobbies/)
   await expect(page.getByRole('heading', { name: 'Hobbies' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Capturar un destello' })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Sumar una espiral' }).click()
   await page.getByLabel('¿Qué es?').fill('Cerámica desde Tailwind')
   await page.getByLabel('¿Cómo te hace sentir?').fill('Presente y curiosa')
   await page.getByRole('button', { name: 'Agregar' }).click()
   await expect(page.getByText('Cerámica desde Tailwind')).toBeVisible()
+  await page.getByLabel('¿Qué pasó con esto, hoy?').fill('Hoy extrañé el torno')
+  await page.getByRole('button', { name: 'Dejar un momento aquí' }).click()
+  await expect(page.getByRole('status')).toContainText('Quedó guardado en tu espiral.')
   await page.getByRole('button', { name: 'Volver a Mundos' }).click()
 
   await page.getByRole('button', { name: 'Mi Balance', exact: true }).click()
@@ -228,6 +233,78 @@ test('convierte los gastos en flores del cerezo sin repetir el árbol en el deta
   await expect(page.locator('.balance-grove')).toHaveCount(0)
   await expect(page.getByRole('heading', { name: 'Últimos movimientos' }).locator('..')).toContainText('Un viaje tranquilo')
   await expect(page.getByRole('heading', { name: 'Últimos movimientos' }).locator('..')).toContainText('$3.200')
+})
+
+test('aura cubre el fondo hasta el borde en espacios internos', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  for (const detail of ['world-vinculos', 'world-cuidado']) {
+    await page.goto(`/#/?axis=mundos&detail=${detail}`)
+    await expect(page.locator('.tw-workspace')).toBeVisible()
+    await expect.poll(() => page.evaluate(() => {
+      const aura = document.querySelector('.workspace-aura')
+      const workspace = document.querySelector('.tw-workspace')
+      if (!aura || !workspace) return null
+      const box = aura.getBoundingClientRect()
+      const column = workspace.getBoundingClientRect()
+      const style = getComputedStyle(workspace)
+      let unveilFilter = ''
+      for (const sheet of document.styleSheets) {
+        let rules: CSSRuleList
+        try { rules = sheet.cssRules } catch { continue }
+        for (const rule of Array.from(rules)) {
+          if (!(rule instanceof CSSKeyframesRule) || !/workspace-unveil/.test(rule.name)) continue
+          for (const keyframe of Array.from(rule.cssRules)) {
+            const filter = 'style' in keyframe ? (keyframe as CSSKeyframeRule).style.getPropertyValue('filter') : ''
+            if (filter && filter !== 'none') unveilFilter = filter
+          }
+        }
+      }
+      return {
+        overflowX: style.overflowX,
+        clipPath: style.clipPath,
+        filter: style.filter,
+        unveilFilter,
+        widerThanColumn: box.width > column.width + 32,
+        pastColumnRight: box.right > column.right + 8,
+        coversViewportRight: box.right >= innerWidth - 2,
+      }
+    })).toEqual({
+      overflowX: 'visible',
+      clipPath: 'none',
+      filter: 'none',
+      unveilFilter: '',
+      widerThanColumn: true,
+      pastColumnRight: true,
+      coversViewportRight: true,
+    })
+  }
+})
+
+test('no inventa barra de scroll cuando el contenido cabe', async ({ page }) => {
+  await page.setViewportSize({ width: 384, height: 844 })
+  await page.goto('/#/?axis=mundos&detail=world-vinculos')
+  await expect(page.locator('.tw-workspace')).toBeVisible()
+  await expect.poll(() => page.evaluate(() => {
+    const column = document.querySelector('.aureo-main-column')
+    const root = document.documentElement
+    return {
+      extraColumnPad: column?.classList.contains('clears-mobile-nav') ?? true,
+      columnPad: Math.round(Number.parseFloat(getComputedStyle(column).paddingBottom)),
+      overflow: root.scrollHeight - root.clientHeight,
+      overlay: document.querySelector('.overlay-scrollbar')?.classList.contains('visible') ?? true,
+    }
+  })).toEqual({ extraColumnPad: false, columnPad: 0, overflow: 0, overlay: false })
+
+  await page.goto('/#/?axis=mundos')
+  await expect.poll(() => page.evaluate(() => {
+    const column = document.querySelector('.aureo-main-column')
+    return {
+      extraColumnPad: column?.classList.contains('clears-mobile-nav') ?? false,
+      columnPad: Math.round(Number.parseFloat(getComputedStyle(column).paddingBottom)),
+    }
+  })).toMatchObject({ extraColumnPad: true })
+  const homePad = await page.evaluate(() => Math.round(Number.parseFloat(getComputedStyle(document.querySelector('.aureo-main-column')).paddingBottom)))
+  expect(homePad).toBeGreaterThanOrEqual(107)
 })
 
 test('incorpora el matiz zodiacal sin sustituir el oro base', async ({ page }) => {
@@ -361,6 +438,7 @@ test('asigna cada vínculo a su órbita dentro de Mi Constelación', async ({ pa
     { name: 'Elena', category: 'Familia', sign: 'Libra' },
     { name: 'Marina', category: 'Guía', sign: 'Piscis' },
   ]) {
+    await page.getByRole('button', { name: 'Encender un vínculo' }).click()
     await name.fill(entry.name)
     await category.selectOption(entry.category)
     await sign.selectOption(entry.sign)
@@ -372,11 +450,11 @@ test('asigna cada vínculo a su órbita dentro de Mi Constelación', async ({ pa
   await expect(map.locator('[data-orbit="2"]')).toHaveCount(1)
   await expect(map.locator('[data-orbit="3"]')).toHaveCount(1)
   await page.getByRole('button', { name: 'Marina, Guía, órbita exterior' }).click()
-  await expect(page.locator('.constellation-reading')).toBeVisible()
-  await expect(page.locator('.constellation-reading')).toContainText('Marina')
-  await expect(page.locator('.constellation-reading')).toContainText('Guía')
-  await expect(page.locator('.constellation-reading')).toContainText('órbita exterior')
-  await expect(page.locator('.constellation-reading')).toContainText('Piscis')
+  const reading = page.locator('.constellation-reading')
+  await expect(reading).toBeVisible()
+  await expect(reading).toContainText('Marina')
+  await expect(reading).toContainText('Guía · Piscis')
+  await expect(reading).not.toContainText('órbita exterior')
   await expect(page).toHaveURL(/detail=world-vinculos/)
 
   const animation = await map.locator('[data-orbit="1"] > span').evaluate((element) => getComputedStyle(element).animationName)
@@ -387,6 +465,9 @@ test('asigna cada vínculo a su órbita dentro de Mi Constelación', async ({ pa
 
 test('activa un Decreto con tres pulsaciones y confirma que ya es mío', async ({ page }) => {
   await page.goto('/#/?axis=mundos&detail=world-decretos')
+  await page.getByRole('button', { name: 'Lo visualizo. Lo siento. Lo decreto.' }).click()
+  await expect(page.locator('.detail-world-decretos .ritual-form')).toHaveCount(0)
+  await page.getByRole('button', { name: 'Escribir un decreto' }).click()
   await page.getByLabel('Tu decreto').fill('Vivo cerca de lo que me hace real')
   await page.getByRole('button', { name: 'Lo decreto' }).click()
   const activate = page.getByRole('button', { name: 'Activar' })
@@ -402,7 +483,7 @@ test('activa un Decreto con tres pulsaciones y confirma que ya es mío', async (
   expect(decree.cumplido).toBe(true)
 })
 
-test('ubica Travesías en el mapa y transfiere un Daruma completo sin datos financieros', async ({ page }) => {
+test('guarda Travesías como postal vivida y transfiere un Daruma completo sin datos financieros', async ({ page }) => {
   test.setTimeout(60_000)
   await page.route('https://nominatim.openstreetmap.org/search?**', (route) => route.fulfill({
     contentType: 'application/json',
@@ -412,9 +493,14 @@ test('ubica Travesías en el mapa y transfiere un Daruma completo sin datos fina
     ]),
   }))
   await page.goto('/#/?axis=mundos&detail=world-travesias')
-  await expect(page.locator('.leaflet-container')).toBeVisible()
+  await expect(page.locator('.journey-trunk')).toBeVisible()
+  await expect(page.locator('.detail-world-travesias .ritual-form')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Capturar un destello' })).toHaveCount(0)
+  await expect(page.locator('.leaflet-container')).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Usar mi ubicación actual' })).toHaveCount(0)
   await expect(page.getByText('La búsqueda consulta OpenStreetMap. También puedes tocar cualquier punto del mapa.', { exact: true })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Guardar una postal' }).click()
+  await expect(page.getByRole('dialog', { name: 'Guardar una postal' })).toBeVisible()
   await page.getByRole('searchbox', { name: 'Buscar cualquier lugar' }).fill('Valparaíso')
   await page.getByRole('button', { name: 'Buscar', exact: true }).click()
   const results = page.getByRole('list', { name: 'Lugares encontrados' }).getByRole('button')
@@ -424,10 +510,12 @@ test('ubica Travesías en el mapa y transfiere un Daruma completo sin datos fina
   await expect(page.getByText('Valparaíso', { exact: true })).toBeVisible()
   await expect(page.getByText('-33.0472, -71.6127', { exact: true })).toHaveCount(0)
   await expect(page.getByText(/^Ubicación elegida:/)).toHaveCount(0)
+  await page.getByLabel('Estado').selectOption('visitado')
   await page.getByLabel('¿Qué viviste ahí?').fill('El viento junto al mar')
   await page.getByRole('button', { name: 'Agregar' }).focus()
   await page.keyboard.press('Enter')
-  await expect(page.getByRole('button', { name: /Valparaíso, lugar que llamas/ })).toBeVisible()
+  await expect(page.getByRole('dialog', { name: 'Guardar una postal' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: /Valparaíso, postal vivida/ })).toBeVisible()
 
   await page.goto('/#/?axis=balance&detail=balance&action=meta')
   await page.getByLabel('¿Qué estás construyendo?').fill('Viaje')
@@ -520,7 +608,11 @@ test('integra los datos del día en la órbita', async ({ page }) => {
   await expect(page.locator('.umbral-maxim')).toBeVisible()
   await page.locator('button[aria-label="Abrir configuración de mi Áureo"]:visible').click()
   await expect(page.getByRole('heading', { name: 'Configuración de mi Áureo' })).toBeVisible()
-  await page.getByRole('button', { name: 'Cerrar configuración' }).click()
+  await expect(page.getByRole('tab', { name: 'Tú' })).toBeVisible()
+  await expect(page.getByLabel('¿Cómo te llamas?')).toBeVisible()
+  await page.getByRole('tab', { name: 'Color de interfaz' }).click()
+  await expect(page.getByRole('radiogroup', { name: 'Matiz de interfaz' })).toBeVisible()
+  await page.locator('nav:visible').getByRole('button', { name: 'Umbral', exact: true }).click()
   await expect(page.getByLabel('Fases lunares')).toBeVisible()
   await expect(page.locator('.moon-strip li')).toHaveCount(8)
   await expect(page.locator('.umbral-pulse-card')).toContainText('Mi pulso de hoy')
@@ -542,6 +634,7 @@ test('sigue disponible sin conexión y conserva los cambios locales', async ({ p
   await page.getByRole('button', { name: /Hobbies, \d+ registros/ }).click()
   await context.setOffline(true)
   try {
+    await page.getByRole('button', { name: 'Sumar una espiral' }).click()
     await page.getByLabel('¿Qué es?').fill('Bitácora offline')
     await page.getByLabel('¿Cómo te hace sentir?').fill('Protegida')
     await page.getByRole('button', { name: 'Agregar' }).click()

@@ -9,6 +9,7 @@ import type { BalanceMovement, DailyArcana, Daruma, GoldenDeclaration, Idea, Nuc
 import { dailyPulsePrompt, greetingForHour, isSameLocalDay, localDateKey, lunarPhaseIndex as phaseIndexFor, MAXIMS, nextMaximIndex, recentDailyArcana, umbralDateLabel, arcanaPhrase, LUNAR_PHASES, resolveLumen, type LumenMode } from '@/domain/umbral'
 import TailwindWorkspace from './tailwind/TailwindWorkspace.vue'
 import VueBitsLightRays from './tailwind/VueBitsLightRays.vue'
+import MundosNightSky from './tailwind/MundosNightSky.vue'
 import UmbralMoonStrip from './tailwind/UmbralMoonStrip.vue'
 import CaptureSeal from './tailwind/CaptureSeal.vue'
 import AureoSettingsPage from './settings/AureoSettingsPage.vue'
@@ -16,7 +17,7 @@ import OpeningMoment from './onboarding/OpeningMoment.vue'
 import { playChord, playTone, unlockTone } from '@/composables/useTone'
 import { MELODY_NOTES, recoverMelodyNotes } from '@/domain/melody'
 import { goldenDarumaCrackPatterns } from './tailwind/goldenDaruma'
-import { activeNucleusEmotionClusters, groupNucleusThoughts, normalizeNucleusTone, nucleusEmotions, recognizeNucleusTone } from './tailwind/nucleusEmotion'
+import { signColors, signLabels } from '@/domain/zodiac'
 
 type AxisId = 'umbral' | 'mundos' | 'balance' | 'nucleo' | 'edad-dorada'
 type DetailId = 'umbral' | 'world-vinculos' | 'world-decretos' | 'world-hobbies' | 'world-travesias' | 'world-cuidado' | 'balance' | 'nucleo' | 'edad-dorada'
@@ -29,11 +30,11 @@ interface AxisDefinition {
 }
 
 const worlds = [
-  { label: 'Mi Constelación', key: 'vinculos', gradient: 'oro', angle: 0, detail: 'world-vinculos' },
+  { label: 'Vínculos', key: 'vinculos', gradient: 'oro', angle: 0, detail: 'world-vinculos' },
   { label: 'Decretos', key: 'decretos', gradient: 'lavanda', angle: 144, detail: 'world-decretos' },
   { label: 'Hobbies', key: 'hobbies', gradient: 'oro', angle: 216, detail: 'world-hobbies' },
   { label: 'Travesías', key: 'travesias', gradient: 'salvia', angle: 72, detail: 'world-travesias' },
-  { label: 'Lo que cuido', key: 'cuidado', gradient: 'ciruela', angle: 288, detail: 'world-cuidado' },
+  { label: 'Lo que cuido', lines: ['Lo que', 'cuido'], key: 'cuidado', gradient: 'ciruela', angle: 288, detail: 'world-cuidado' },
 ] as const
 const detailIds: DetailId[] = ['umbral', 'world-vinculos', 'world-decretos', 'world-hobbies', 'world-travesias', 'world-cuidado', 'balance', 'edad-dorada']
 
@@ -44,13 +45,6 @@ const axes: AxisDefinition[] = [
   { id: 'nucleo', label: 'Núcleo', icon: 'moon', phrase: 'Lo más íntimo permanece solo en este dispositivo.' },
   { id: 'edad-dorada', label: 'Edad Dorada', icon: 'star', phrase: 'Tu porvenir se construye desde lo que ya está naciendo.' },
 ]
-
-const zodiacColors: Record<string, string> = {
-  aries: '#b86b56', tauro: '#7d9b8a', geminis: '#7897b8', cancer: '#a18aa8',
-  leo: '#c18a55', virgo: '#8b9d78', libra: '#b58da2', escorpio: '#8b667d',
-  sagitario: '#a87868', capricornio: '#71897d', acuario: '#638cad', piscis: '#817daf',
-}
-const zodiacLabels: Record<string, string> = { aries: 'Aries', tauro: 'Tauro', geminis: 'Géminis', cancer: 'Cáncer', leo: 'Leo', virgo: 'Virgo', libra: 'Libra', escorpio: 'Escorpio', sagitario: 'Sagitario', capricornio: 'Capricornio', acuario: 'Acuario', piscis: 'Piscis' }
 
 function initialAxis(queryAxis: unknown): AxisId {
   const requested = typeof queryAxis === 'string' ? queryAxis : null
@@ -63,6 +57,12 @@ const route = useRoute()
 const router = useRouter()
 const settingsActive = computed(() => route.name === 'configuracion-aureo')
 const profile = useProfileStore()
+const zodiacKey = computed(() => profile.profile?.signo?.toLowerCase() ?? 'aries')
+const zodiacLabel = computed(() => signLabels[zodiacKey.value] ?? signLabels.aries)
+const zodiacStyle = computed(() => {
+  const color = signColors[zodiacKey.value] ?? signColors.aries
+  return { '--zodiac-color': color, '--sign-color': color }
+})
 const selectedId = ref<AxisId>(initialAxis(route.query.axis))
 const activeDetail = ref<DetailId | null>(typeof route.query.detail === 'string' && detailIds.includes(route.query.detail as DetailId) ? route.query.detail as DetailId : null)
 const detailAction = ref(typeof route.query.action === 'string' ? route.query.action : '')
@@ -115,12 +115,6 @@ const lumenPref = ref<LumenMode>('auto')
 const resolvedLumen = computed(() => resolveLumen(lumenPref.value))
 
 const selected = computed(() => axes.find((axis) => axis.id === selectedId.value) ?? axes[0]!)
-const zodiacKey = computed(() => profile.profile?.signo?.toLowerCase() ?? 'aries')
-const zodiacLabel = computed(() => zodiacLabels[zodiacKey.value] ?? zodiacLabels.aries)
-const zodiacStyle = computed(() => {
-  const color = zodiacColors[zodiacKey.value] ?? zodiacColors.aries
-  return { '--zodiac-color': color, '--sign-color': color }
-})
 const goldenPreviewCracks = computed(() => goldenDarumaCrackPatterns.slice(0, Math.min(counts.value['edad-dorada'], goldenDarumaCrackPatterns.length)))
 const balancePreviewAnchors = [[24, 44], [31, 31], [37, 48], [43, 27], [49, 40], [55, 23], [61, 36], [67, 28], [73, 44], [79, 33], [32, 57], [64, 54]] as const
 const balancePreviewFlowers = computed(() => [...balanceMovements.value]
@@ -159,7 +153,13 @@ const lunarPhaseIndex = computed(() => phaseIndexFor())
 const lunarPhase = computed(() => LUNAR_PHASES[lunarPhaseIndex.value]!)
 const dailyPrompt = computed(() => dailyPulsePrompt())
 const todayPulse = computed(() => [...pulses.value].reverse().find((item) => item.fecha === localDateKey()))
-const showCaptureSeal = computed(() => selectedId.value !== 'nucleo')
+const showCaptureSeal = computed(() => selectedId.value !== 'nucleo' && activeDetail.value !== 'world-cuidado' && activeDetail.value !== 'world-vinculos' && activeDetail.value !== 'world-travesias' && activeDetail.value !== 'world-hobbies' && activeDetail.value !== 'world-decretos')
+const showCareMuralSeal = computed(() => activeDetail.value === 'world-cuidado' && !settingsActive.value)
+const showConstellationSeal = computed(() => activeDetail.value === 'world-vinculos' && !settingsActive.value)
+const showJourneySeal = computed(() => activeDetail.value === 'world-travesias' && !settingsActive.value)
+const showHobbySeal = computed(() => activeDetail.value === 'world-hobbies' && !settingsActive.value)
+const showDecreeSeal = computed(() => activeDetail.value === 'world-decretos' && !settingsActive.value)
+const workspaceRef = ref<{ onCareImageChange: (event: Event) => Promise<void>; careImageLoading: boolean; openConstellationComposer: () => void; openJourneyComposer: () => void; openHobbyComposer: () => void; openDecreeComposer: () => void } | null>(null)
 const currentMaxim = computed(() => MAXIMS[maximIndex.value] ?? MAXIMS[0]!)
 const cardPhrase = computed(() => arcanaPhrase(card.value))
 const dailySign = computed(() => {
@@ -269,11 +269,6 @@ function closeDetail() {
   returnToTop()
 }
 
-function closeSettings() {
-  void router.replace({ name: 'laboratorio-tailwind', query: { axis: selectedId.value } })
-  returnToTop()
-}
-
 async function collectionCount(keys: string[]) {
   const values = await Promise.all(keys.map((key) => storage.get<unknown[]>(key)))
   return values.reduce((total, value) => total + (Array.isArray(value) ? value.length : 0), 0)
@@ -281,7 +276,7 @@ async function collectionCount(keys: string[]) {
 
 async function refreshCounts() {
   const worldEntries = await Promise.all(worlds.map(async (world) => {
-    if (world.key === 'cuidado') return [world.key, await collectionCount(['companeros', 'plantas'])] as const
+    if (world.key === 'cuidado') return [world.key, await collectionCount(['companeros', 'plantas', 'locuidado_memoria'])] as const
     return [world.key, await collectionCount([world.key])] as const
   }))
   worldCounts.value = Object.fromEntries(worldEntries)
@@ -292,7 +287,7 @@ async function refreshCounts() {
   pulses.value = (await storage.get<Pulse[]>('pulso')) ?? []
   counts.value = {
     umbral: await collectionCount(['intenciones', 'pulso']),
-    mundos: await collectionCount(['vinculos', 'companeros', 'plantas', 'decretos', 'hobbies', 'travesias']),
+    mundos: await collectionCount(['vinculos', 'companeros', 'plantas', 'locuidado_memoria', 'decretos', 'hobbies', 'travesias']),
     balance: await collectionCount(['balance_movimientos', 'balance_darumas']),
     nucleo: nucleusThoughts.value.length,
     'edad-dorada': await collectionCount(['edad_dorada_declaraciones']),
@@ -389,6 +384,9 @@ watch(selectedId, (id) => {
   if (id === 'nucleo') captureOpen.value = false
   if (id !== 'umbral') showArcanaDeck.value = false
 })
+watch(activeDetail, (detail) => {
+  if (detail === 'world-cuidado') captureOpen.value = false
+})
 watch(captureOpen, (value) => { if (!value) { captureStep.value = 'write'; captureText.value = '' } })
 
 async function openDailyCard() {
@@ -398,6 +396,26 @@ async function openDailyCard() {
 }
 
 function closeArcanaDeck() { showArcanaDeck.value = false }
+
+function onCareMuralFabChange(event: Event) {
+  void workspaceRef.value?.onCareImageChange(event)
+}
+
+function openConstellationComposer() {
+  workspaceRef.value?.openConstellationComposer()
+}
+
+function openJourneyComposer() {
+  workspaceRef.value?.openJourneyComposer()
+}
+
+function openHobbyComposer() {
+  workspaceRef.value?.openHobbyComposer()
+}
+
+function openDecreeComposer() {
+  workspaceRef.value?.openDecreeComposer()
+}
 
 function toggleArcanaDeck() {
   if (showArcanaDeck.value) closeArcanaDeck()
@@ -538,12 +556,12 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer) })
         </div>
       </aside>
 
-      <div class="tw:min-w-0 tw:pb-[calc(6.7rem+env(safe-area-inset-bottom))] tw:lg:pb-0">
+      <div class="aureo-main-column tw:min-w-0" :class="{ 'clears-mobile-nav': settingsActive || !activeDetail }">
         <div class="aureo-content-shell tw:px-5 tw:py-3 tw:sm:px-8 tw:sm:py-5 tw:lg:py-6">
           <div class="aureo-content-width tw:mx-auto tw:w-full">
             <section aria-live="polite">
-              <AureoSettingsPage v-if="settingsActive" @close="closeSettings" />
-              <TailwindWorkspace v-else-if="activeDetail" :detail="activeDetail" :initial-action="detailAction" :intention-draft="intentionDraft" @close="closeDetail" @changed="refreshCounts" @draft-consumed="intentionDraft = ''" />
+              <AureoSettingsPage v-if="settingsActive" />
+              <TailwindWorkspace v-else-if="activeDetail" ref="workspaceRef" :detail="activeDetail" :initial-action="detailAction" :intention-draft="intentionDraft" @close="closeDetail" @changed="refreshCounts" @draft-consumed="intentionDraft = ''" />
               <div v-else class="axis-home-lab tw:relative tw:min-w-0">
                 <div v-if="selectedId === 'umbral'" class="axis-heading-lab umbral-heading" data-axis="umbral">
                     <div class="umbral-heading-bar">
@@ -624,19 +642,21 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer) })
                   </section>
 
                   <section v-else-if="selectedId === 'mundos'" key="mundos" class="worlds-stage-lab tw:grid tw:place-items-center tw:pt-2 tw:pb-1 tw:text-center" aria-label="Mundos">
+                    <MundosNightSky />
                     <svg class="world-flower-lab" viewBox="-70 -60 440 420" role="group" aria-label="Accesos a tus mundos">
                       <defs>
-                        <radialGradient id="lab-petal-oro" cx="35%" cy="26%" r="78%"><stop offset="0" stop-color="#f5e9c6"/><stop offset=".56" stop-color="#c9a86a"/><stop offset="1" stop-color="#805e27"/></radialGradient>
-                        <radialGradient id="lab-petal-salvia" cx="35%" cy="26%" r="78%"><stop offset="0" stop-color="#e3f0e8"/><stop offset=".56" stop-color="#7da797"/><stop offset="1" stop-color="#456457"/></radialGradient>
-                        <radialGradient id="lab-petal-lavanda" cx="35%" cy="26%" r="78%"><stop offset="0" stop-color="#e6e1f3"/><stop offset=".56" stop-color="#8173b7"/><stop offset="1" stop-color="#4e426f"/></radialGradient>
-                        <radialGradient id="lab-petal-ciruela" cx="35%" cy="26%" r="78%"><stop offset="0" stop-color="#f0dcef"/><stop offset=".56" stop-color="#9b7d9b"/><stop offset="1" stop-color="#634a63"/></radialGradient>
-                        <radialGradient id="lab-flower-core" cx="35%" cy="28%" r="70%"><stop offset="0" stop-color="#fff9e8"/><stop offset=".52" stop-color="#e8d29a"/><stop offset="1" stop-color="#9d7135"/></radialGradient>
+                        <radialGradient id="lab-petal-oro" cx="48%" cy="22%" r="82%"><stop offset="0" stop-color="#c9a86a"/><stop offset=".52" stop-color="#6a5424"/><stop offset="1" stop-color="#0e0c08"/></radialGradient>
+                        <radialGradient id="lab-petal-salvia" cx="48%" cy="22%" r="82%"><stop offset="0" stop-color="#7da797"/><stop offset=".52" stop-color="#3d5a50"/><stop offset="1" stop-color="#0b100e"/></radialGradient>
+                        <radialGradient id="lab-petal-lavanda" cx="48%" cy="22%" r="82%"><stop offset="0" stop-color="#8173b7"/><stop offset=".52" stop-color="#433a62"/><stop offset="1" stop-color="#0c0b12"/></radialGradient>
+                        <radialGradient id="lab-petal-ciruela" cx="48%" cy="22%" r="82%"><stop offset="0" stop-color="#9b7d9b"/><stop offset=".52" stop-color="#4e3a4e"/><stop offset="1" stop-color="#100b10"/></radialGradient>
+                        <radialGradient id="lab-flower-halo" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#ead6a7" stop-opacity=".42"/><stop offset="1" stop-color="#ead6a7" stop-opacity="0"/></radialGradient>
                       </defs>
-                      <ellipse class="lab-flower-shadow" cx="150" cy="166" rx="91" ry="46"/>
+                      <ellipse class="lab-flower-shadow" cx="150" cy="178" rx="78" ry="18"/>
                       <g
                         v-for="(world, index) in worlds"
                         :key="world.key"
                         class="lab-world-petal"
+                        :class="{ lit: (worldCounts[world.key] ?? 0) > 0 }"
                         :transform="`rotate(${world.angle} 150 150)`"
                         :style="{ '--petal-index': index }"
                         role="button"
@@ -645,13 +665,20 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer) })
                         @click="openDetail(world.detail)"
                         @keydown.enter.space.prevent="openDetail(world.detail)"
                       >
-                        <ellipse class="lab-petal-shadow" cx="150" cy="83" rx="38" ry="66"/>
-                        <ellipse class="lab-petal-surface" cx="150" cy="83" rx="38" ry="66" :fill="`url(#lab-petal-${world.gradient})`"/>
-                        <!-- 90° base para correr a lo largo del eje largo; invertido en los pétalos inferiores (Decretos 144°, Hobbies 216°). -->
-                        <text class="lab-petal-label" x="150" y="83" text-anchor="middle" dominant-baseline="middle" :transform="`rotate(${[72,144,216].includes(world.angle) ? 270 : 90} 150 83)`">{{ world.label }}</text>
+                        <path class="lab-petal-surface" :fill="`url(#lab-petal-${world.gradient})`" d="M150 148C128 110 110 74 120 42C128 22 150 12 150 12C150 12 172 22 180 42C190 74 172 110 150 148Z"/>
+                        <path class="lab-petal-filament" d="M150 138V28"/>
+                        <text class="lab-petal-label" x="150" y="72" text-anchor="middle" dominant-baseline="middle" :transform="`rotate(${[72,144,216].includes(world.angle) ? 270 : 90} 150 72)`">
+                          <template v-if="'lines' in world">
+                            <tspan x="150" dy="-0.55em">{{ world.lines[0] }}</tspan>
+                            <tspan x="150" dy="1.2em">{{ world.lines[1] }}</tspan>
+                          </template>
+                          <template v-else>{{ world.label }}</template>
+                        </text>
                       </g>
-                      <circle class="lab-flower-core" cx="150" cy="150" r="31" fill="url(#lab-flower-core)"/>
-                      <circle class="lab-flower-seed" cx="150" cy="150" r="10"/>
+                      <circle class="lab-flower-halo" cx="150" cy="150" r="34" fill="url(#lab-flower-halo)"/>
+                      <circle class="lab-flower-heart" cx="150" cy="150" r="22"/>
+                      <circle class="lab-flower-ring" cx="150" cy="150" r="12"/>
+                      <circle class="lab-flower-seed" cx="150" cy="150" r="6"/>
                     </svg>
                     <p class="worlds-caption tw:mb-0 tw:italic tw:text-marfil-suave">Todo lo que ya es tuyo.</p>
                   </section>
@@ -755,14 +782,13 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer) })
                     </section>
                     <template v-else>
                     <div class="nucleus-home-cluster">
-                    <div class="nucleus-cloth-lab tw:relative tw:grid tw:aspect-square tw:w-full tw:max-w-[15.5rem] tw:place-items-center tw:overflow-hidden tw:px-6 tw:text-center">
-                      <span class="nucleus-thread" aria-hidden="true" />
+                    <label class="nucleus-invite" for="nucleus-thought">Escríbelo. Nadie más lo verá.</label>
+                    <div class="nucleus-cloth-lab">
                       <span v-if="nucleusEmotionClusters.length" class="nucleus-preview-plasma" aria-hidden="true"><span v-for="emotion in nucleusEmotionClusters" :key="emotion.tone" class="nucleus-preview-pool" :style="{ left: `${emotion.x}%`, top: `${emotion.y}%`, '--emotion-color': emotion.color, '--plasma-index': emotion.index }" /></span>
-                      <span v-for="index in groupedNucleusThoughts.length ? 0 : 3" :key="`empty-${index}`" class="nucleus-light-lab" :style="{ '--light': index }" aria-hidden="true" />
-                      <button v-for="entry in groupedNucleusThoughts" :key="entry.thought.id" type="button" class="nucleus-preview-point" :style="{ left: `${entry.x}%`, top: `${entry.y}%`, '--thought-color': entry.emotion.color, '--thought-index': entry.index }" :aria-label="`Abrir ${entry.emotion.label.toLowerCase()}: ${entry.thought.texto}`" @click="openNucleusThought(entry.thought.id)"><span /></button>
+                      <span v-if="!groupedNucleusThoughts.length" class="nucleus-light-lab" aria-hidden="true" />
+                      <button v-for="entry in groupedNucleusThoughts" :key="entry.thought.id" type="button" class="nucleus-preview-point" :class="{ 'is-newest': entry.newest }" :style="{ left: `${entry.x}%`, top: `${entry.y}%`, '--thought-color': entry.emotion.color, '--thought-index': entry.index, '--thought-freshness': entry.freshness }" :aria-label="`Abrir ${entry.emotion.label.toLowerCase()}: ${entry.thought.texto}`" @click="openNucleusThought(entry.thought.id)"><span /></button>
                     </div>
                     <form class="nucleus-capture-lab" @submit.prevent="addNucleusThought">
-                      <label for="nucleus-thought">Escríbelo. Nadie más lo verá.</label>
                       <textarea id="nucleus-thought" v-model="nucleusThoughtText" rows="2" maxlength="1200" placeholder="Escribe lo que aparece…" />
                       <button v-if="nucleusThoughtText.trim()" type="submit" :disabled="nucleusSaving">{{ nucleusSaving ? 'Guardando…' : 'Dejarlo aquí' }}</button>
                     </form>
@@ -911,6 +937,24 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer) })
       </button>
     </nav>
     <CaptureSeal v-model:open="captureOpen" v-model:text="captureText" :visible="showCaptureSeal && !settingsActive" :step="captureStep" @submit="submitCapture" @classify="classifyCapture" />
+    <Transition name="fab-slot">
+      <label v-if="showCareMuralSeal" key="care-fab" class="world-fab is-care" :class="{ loading: workspaceRef?.careImageLoading }">
+        <input type="file" accept="image/*" :disabled="Boolean(workspaceRef?.careImageLoading)" aria-label="Elegir imagen para el mural" @change="onCareMuralFabChange" />
+        <AppIcon name="plus" />
+      </label>
+      <button v-else-if="showConstellationSeal" key="vinculos-fab" type="button" class="world-fab is-vinculos" aria-label="Encender un vínculo" @click="openConstellationComposer">
+        <AppIcon name="plus" />
+      </button>
+      <button v-else-if="showJourneySeal" key="travesias-fab" type="button" class="world-fab is-travesias" aria-label="Guardar una postal" @click="openJourneyComposer">
+        <AppIcon name="plus" />
+      </button>
+      <button v-else-if="showHobbySeal" key="hobbies-fab" type="button" class="world-fab is-hobbies" aria-label="Sumar una espiral" @click="openHobbyComposer">
+        <AppIcon name="plus" />
+      </button>
+      <button v-else-if="showDecreeSeal" key="decretos-fab" type="button" class="world-fab is-decretos" aria-label="Escribir un decreto" @click="openDecreeComposer">
+        <AppIcon name="plus" />
+      </button>
+    </Transition>
     <OpeningMoment v-if="selectedId === 'umbral' && !activeDetail && !settingsActive && !openingDone" @done="openingDone = true" />
   </main>
 </template>
@@ -919,7 +963,7 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer) })
 .tailwind-lab {
   --lab-gold: #c9a86a;
   --zodiac-color: #b86b56;
-  max-width: 100vw;
+  max-width: 100%;
   overflow-x: clip;
   accent-color: var(--lab-gold);
   caret-color: #ead6a7;
@@ -936,6 +980,13 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer) })
     radial-gradient(circle at 47% 48%, color-mix(in srgb,var(--zodiac-color) 4%,transparent), transparent 34rem),
     #080b11;
   background-attachment: fixed;
+}
+/* Un solo hueco para la barra móvil. El workspace ya reserva 4.75rem;
+   repetirlo aquí inventaba scroll sobre fondo vacío. */
+@media (max-width: 1023px) {
+  .aureo-main-column.clears-mobile-nav {
+    padding-bottom: calc(6.7rem + env(safe-area-inset-bottom));
+  }
 }
 .tailwind-lab:is(.app-forward-enter-active,.app-back-enter-active,.app-forward-enter-from,.app-back-enter-from,.app-forward-enter-to,.app-back-enter-to) { transform: none !important; }
 .tailwind-lab * { scrollbar-width: thin; }
@@ -1001,7 +1052,8 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer) })
 .worlds-stage-lab { min-height: 22rem; }
 .worlds-caption { margin-top: -1.35rem; font-size: var(--texto-4); }
 .nucleus-privacy-note { margin: 0; color: #b9b3aa; font: 500 var(--texto-1)/1.35 system-ui, sans-serif; letter-spacing: .04em; }
-.nucleus-home-cluster { display: grid; justify-items: center; gap: .35rem; width: min(100%, 34rem); }
+.nucleus-home-cluster { display: grid; justify-items: center; gap: .7rem; width: min(100%, 34rem); }
+.nucleus-invite { width: 100%; margin: 0; color: #d6cedf; font: 300 clamp(var(--texto-5), 2.4vw, var(--texto-6))/1.15 Georgia, 'Times New Roman', serif; text-align: center; text-wrap: balance; }
 .nucleus-capture-lab textarea, .golden-daruma-capture textarea, .umbral-pulse-card textarea { resize: none; }
 .balance-home-actions { display: grid; grid-template-columns: 1fr 1fr; gap: .55rem; width: min(100%, 34rem); margin: .35rem auto 0; }
 .umbral-heading .axis-welcome-title { font-family: Fraunces, 'Aureo Serif', Georgia, serif; font-weight: 200; font-size: clamp(var(--texto-4), 3.6vw, var(--texto-6)); }
@@ -1171,49 +1223,141 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer) })
 .umbral-threshold-notes small { display: block; margin-bottom: .08rem; color: #b9b3aa; font: 300 var(--texto-1)/1.25 Spectral, 'Aureo Serif', Georgia, serif; letter-spacing: .02em; }
 .umbral-threshold-notes strong { display: block; overflow-wrap: anywhere; color: #ead6a7; font-family: Fraunces, 'Aureo Serif', Georgia, serif; font-size: var(--texto-3); font-weight: 300; line-height: 1.15; text-wrap: balance; }
 
-.worlds-stage-lab { position: relative; }
-.worlds-stage-lab::before { content: ''; position: absolute; z-index: -1; width: min(82vw, 31rem); aspect-ratio: 1; border: 1px solid rgba(201,168,106,.12); border-radius: 50%; transform: rotateX(67deg) rotateZ(-12deg); }
-.world-flower-lab { display: block; width: min(92vw, 26rem); overflow: visible; filter: drop-shadow(0 22px 34px rgba(0,0,0,.3)); animation: flower-suspension 7s ease-in-out infinite; }
-.lab-flower-shadow { fill: rgba(9,7,15,.34); filter: blur(7px); transform-origin:center; animation: flower-shadow-breathe 7s ease-in-out infinite; }
-.lab-world-petal { cursor: pointer; transition: filter var(--dur-2) cubic-bezier(.23,1,.32,1); }
-.lab-petal-shadow { fill: rgba(5,6,10,.35); transform: translateY(7px); }
-.lab-petal-surface { stroke: rgba(244,239,229,.26); stroke-width: 1px; transform-box:fill-box; transform-origin:center; animation: petal-current 6.4s ease-in-out infinite; animation-delay:calc(var(--petal-index) * -.72s); }
-.lab-petal-label { fill: #f4efe5; font: 500 var(--texto-3)/1 system-ui, sans-serif; letter-spacing: .02em; paint-order: stroke; pointer-events: none; stroke: rgba(8,11,17,.6); stroke-width: 4px; stroke-linejoin: round; }
+.worlds-stage-lab { position: relative; overflow: visible; }
+.worlds-stage-lab::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  width: min(82vw, 28rem);
+  aspect-ratio: 1;
+  border: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 48%, transparent 38%, color-mix(in srgb, var(--zodiac-color, var(--oro)) 10%, transparent) 52%, transparent 68%);
+  box-shadow: inset 0 0 70px rgba(0, 0, 0, .28);
+  -webkit-mask-image: radial-gradient(circle, #000 28%, transparent 72%);
+  mask-image: radial-gradient(circle, #000 28%, transparent 72%);
+}
+.world-flower-lab {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: min(92vw, 26rem);
+  overflow: visible;
+  animation: flower-suspension 7s ease-in-out infinite;
+}
+.worlds-caption { position: relative; z-index: 1; }
+.lab-flower-shadow { fill: rgba(9, 7, 15, .42); }
+.lab-world-petal { cursor: pointer; }
+.lab-petal-surface {
+  stroke: none;
+  transform-box: fill-box;
+  transform-origin: center;
+  fill-opacity: .38;
+  animation: petal-breathe 6.4s ease-in-out infinite;
+  animation-delay: calc(var(--petal-index) * -.72s);
+}
+.lab-world-petal.lit .lab-petal-surface { fill-opacity: 1; }
+.lab-petal-filament {
+  fill: none;
+  stroke: #ead6a7;
+  stroke-width: 1.15;
+  stroke-linecap: round;
+  opacity: 0;
+  pointer-events: none;
+}
+.lab-world-petal.lit .lab-petal-filament { opacity: .72; }
+.lab-petal-label {
+  fill: #f4efe5;
+  font: 300 var(--texto-3) / 1 Spectral, 'Aureo Serif', Georgia, serif;
+  letter-spacing: .01em;
+  paint-order: stroke;
+  pointer-events: none;
+  stroke: rgba(8, 11, 17, .7);
+  stroke-width: 3.5px;
+  stroke-linejoin: round;
+}
+.lab-world-petal:not(.lit) .lab-petal-label { fill: #c4bdb0; }
 .lab-world-petal:is(:hover, :focus-visible) .lab-petal-label { fill: #fff9e8; }
-.lab-flower-core { filter: drop-shadow(0 10px 18px rgba(0,0,0,.3)); }
-.lab-flower-seed { fill: #080b11; }
-.lab-world-petal:hover, .lab-world-petal:focus-visible { filter: brightness(1.12) saturate(1.06); }
+.lab-world-petal.lit:is(:hover, :focus-visible) .lab-petal-filament { opacity: 1; }
+.lab-world-petal:is(:hover, :focus-visible) .lab-petal-surface { fill-opacity: 1; }
+.lab-flower-heart { fill: #080b11; }
+.lab-flower-ring {
+  fill: none;
+  stroke: color-mix(in srgb, #c9a86a 70%, #ead6a7);
+  stroke-width: 1.2;
+}
+.lab-flower-seed {
+  fill: #ead6a7;
+  animation: flower-seed-pulse 3.8s ease-in-out infinite;
+}
 .lab-world-petal:focus-visible { outline: none; }
-/* Marfil, no oro: el anillo tiene que leerse también sobre los pétalos dorados. */
-.lab-world-petal:focus-visible .lab-petal-surface { stroke: #f4efe5; stroke-width: 3.5px; filter: drop-shadow(0 0 5px rgba(8,11,17,.9)); }
-@keyframes flower-suspension { 0%,100% { filter:drop-shadow(0 22px 34px rgba(0,0,0,.3)) brightness(.97); } 50% { filter:drop-shadow(0 28px 42px rgba(0,0,0,.38)) brightness(1.06); } }
-@keyframes flower-shadow-breathe { 0%,100% { transform:scale(.92); opacity:.42; } 50% { transform:scale(1.08); opacity:.68; } }
-@keyframes petal-current { 0%,100% { filter:brightness(.96) saturate(.94); } 50% { filter:brightness(1.1) saturate(1.08); } }
-@keyframes flower-core-pulse { 0%,100% { transform:scale(.96); filter:drop-shadow(0 10px 18px rgba(0,0,0,.3)); } 50% { transform:scale(1.05); filter:drop-shadow(0 14px 28px rgba(234,214,167,.24)); } }
-@keyframes flower-seed-light { 0%,100% { opacity:.68; } 50% { opacity:1; filter:drop-shadow(0 0 8px #ead6a7); } }
+.lab-world-petal:focus-visible .lab-petal-surface { stroke: #f4efe5; stroke-width: 2.4px; }
+@keyframes flower-suspension {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-.32rem); }
+}
+@keyframes petal-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.03); }
+}
+@keyframes flower-seed-pulse {
+  0%, 100% { opacity: .78; }
+  50% { opacity: 1; }
+}
 
-.nucleus-cloth-lab { border-radius: 47% 53% 51% 49% / 52% 46% 54% 48%; background: radial-gradient(circle at 52% 42%, rgba(42,38,67,.58), transparent 38%), radial-gradient(circle at 40% 35%, #151827, #080b11 74%); background-size:130% 130%; box-shadow: inset 0 0 80px rgba(129,115,183,.08), 0 30px 70px rgba(0,0,0,.28); animation: nucleus-cloth-current 8s ease-in-out infinite alternate; }
-.nucleus-cloth-lab::before, .nucleus-cloth-lab::after { content: ''; position: absolute; inset: 2%; border: 1px solid rgba(129,115,183,.15); border-radius: 48% 52% 46% 54%; transform: rotate(18deg); }
-.nucleus-cloth-lab::after { inset: 12% 4%; border-color: rgba(201,168,106,.09); transform: rotate(-26deg); }
-.nucleus-thread { position: absolute; left: 50%; top: 0; width: 1px; height: 100%; background: linear-gradient(transparent, rgba(201,168,106,.48), transparent); }
-.nucleus-light-lab { --angle: calc(var(--light) * 57deg); position: absolute; left: 50%; top: 50%; width: 7px; height: 7px; border-radius: 50%; background: #f4efe5; box-shadow: 0 0 6px #f4efe5, 0 0 18px rgba(201,168,106,.5); transform: rotate(var(--angle)) translateY(-9rem) rotate(calc(var(--angle) * -1)); animation: nucleus-light-breathe 3.8s cubic-bezier(.23,1,.32,1) infinite; animation-delay: calc(var(--light) * -.47s); }
+.nucleus-cloth-lab {
+  position: relative;
+  isolation: isolate;
+  width: min(100%, 28rem);
+  aspect-ratio: 1;
+  overflow: visible;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle closest-side at 50% 42%, rgba(129, 115, 183, .22), transparent 32%),
+    radial-gradient(circle closest-side at 38% 32%, #1c2030 0%, #121624 86%, #080b11 96%, transparent 100%);
+  background-size: 130% 130%, 100% 100%;
+  box-shadow: inset 0 0 42px rgba(8, 11, 17, .35);
+  animation: nucleus-cloth-current 8s ease-in-out infinite alternate;
+}
+.nucleus-light-lab {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  top: 50%;
+  width: 11px;
+  height: 11px;
+  border: 1px solid color-mix(in srgb, #e4cfa8 72%, #ead6a7);
+  border-radius: 50%;
+  background: #e4cfa8;
+  box-shadow: 0 0 12px color-mix(in srgb, #e4cfa8 55%, transparent), 0 8px 28px color-mix(in srgb, #8173b7 28%, transparent);
+  transform: translate(-50%, -50%);
+  animation: nucleus-light-breathe 3.8s cubic-bezier(.23, 1, .32, 1) infinite;
+}
+.nucleus-light-lab::after {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border: 1px solid rgba(228, 207, 168, .46);
+  border-radius: 50%;
+}
 .nucleus-entry-core { width:min(68%,19rem); min-height:44px; color:#f4efe5; }
-.nucleus-capture-lab { display:grid; width:min(100%,38rem); gap:.75rem; padding:1.15rem 0 0; border-top:1px solid rgba(129,115,183,.28); text-align:left; }
-.nucleus-capture-lab label { color:#d6cedf; font: 500 var(--texto-2)/1.35 system-ui,sans-serif; }
-.nucleus-capture-lab textarea { width:100%; min-height:3.6rem; box-sizing:border-box; resize:none; border:1px solid rgba(129,115,183,.3); border-radius:14px; outline:0; background:radial-gradient(circle at 6% 0,rgba(129,115,183,.1),transparent 42%),#090d15; color:#f4efe5; caret-color:#c9a86a; padding:.7rem .95rem; font: 400 var(--texto-4)/1.5 var(--font-aureo,serif); transition:border-color var(--dur-2) ease,box-shadow var(--dur-2) ease,background-color var(--dur-2) ease; }
-.nucleus-capture-lab textarea::placeholder { color:#a9a2b1; opacity:1; }
-.nucleus-capture-lab textarea:focus-visible { border-color:#8173b7; box-shadow:0 16px 36px rgba(0,0,0,.24),0 0 0 3px rgba(129,115,183,.13); }
-.nucleus-capture-lab button { justify-self:end; min-height:44px; border:1px solid rgba(201,168,106,.44); border-radius:12px; background:rgba(201,168,106,.12); color:#ead6a7; padding:.65rem 1.1rem; font: 600 var(--texto-2)/1 system-ui,sans-serif; cursor:pointer; transition:background-color var(--dur-2) ease,border-color var(--dur-2) ease,transform var(--dur-1) ease; }
+.nucleus-capture-lab { display:grid; width:min(100%,28rem); gap:.55rem; padding:0 .15rem; border:0; background:transparent; text-align:left; }
+.nucleus-capture-lab textarea { width:100%; min-height:3.6rem; box-sizing:border-box; resize:none; border:0; border-bottom:1px solid rgba(129,115,183,.42); border-radius:0; outline:0; background:transparent; color:#f4efe5; caret-color:#c9a86a; padding:.65rem .1rem; font: 400 var(--texto-4)/1.5 Georgia,'Times New Roman',serif; transition:border-color var(--dur-2) ease,box-shadow var(--dur-2) ease; }
+.nucleus-capture-lab textarea::placeholder { color:#938d85; opacity:1; }
+.nucleus-capture-lab textarea:focus-visible { border-bottom-color:#ead6a7; background:linear-gradient(180deg,transparent,rgba(129,115,183,.05)); box-shadow:0 14px 24px -22px rgba(129,115,183,.75); }
+.nucleus-capture-lab button { justify-self:end; min-height:44px; border:1px solid rgba(201,168,106,.44); border-radius: var(--radio-pill); background:rgba(201,168,106,.12); color:#ead6a7; padding:.65rem 1.1rem; font: 600 var(--texto-2)/1 system-ui,sans-serif; cursor:pointer; transition:background-color var(--dur-2) ease,border-color var(--dur-2) ease,transform var(--dur-1) ease; }
 .nucleus-capture-lab button:hover,.nucleus-capture-lab button:focus-visible { border-color:#c9a86a; background:rgba(201,168,106,.2); }
 .nucleus-capture-lab button:focus-visible { outline:2px solid #f4efe5; outline-offset:3px; }
 .nucleus-capture-lab button:active { transform:scale(.98); }
 .nucleus-capture-lab button:disabled { cursor:wait; opacity:.58; }
-.nucleus-preview-plasma { position:absolute; z-index:1; inset:0; overflow:hidden; pointer-events:none; }
+.nucleus-preview-plasma { position:absolute; z-index:1; inset:6%; overflow:hidden; border-radius:50%; pointer-events:none; }
 .nucleus-home-gate{display:grid;width:min(100%,34rem);justify-items:center;gap:1.2rem;padding:clamp(1.5rem,5vw,3rem);border-block:1px solid rgba(201,168,106,.24);background:radial-gradient(circle at 50% 35%,rgba(129,115,183,.13),transparent 60%);text-align:center}.nucleus-home-gate>svg{width:3rem;color:#8173b7}.nucleus-home-gate h2{margin:0;color:#f4efe5;font-size:var(--texto-8);font-weight:250}.nucleus-home-gate p{margin:0;color:#b9b3aa;font-style:italic}.nucleus-home-progress{display:flex;gap:.65rem}.nucleus-home-progress span{width:.55rem;aspect-ratio:1;border:1px solid rgba(201,168,106,.48);border-radius:50%}.nucleus-home-progress span.filled{background:#c9a86a;box-shadow:0 0 12px rgba(201,168,106,.45)}.nucleus-home-notes{display:grid;width:100%;grid-template-columns:repeat(7,minmax(0,1fr));gap:.4rem}.nucleus-home-notes button{min-height:48px;border:1px solid rgba(201,168,106,.25);border-radius:10px;background:#0d121b;color:#ead6a7;cursor:pointer}.nucleus-home-notes button:active{background:#c9a86a;color:#080b11;transform:translateY(2px)}.nucleus-home-hint{min-height:44px;padding:.55rem 1rem;border:1px solid rgba(201,168,106,.38);border-radius: var(--radio-pill);background:transparent;color:#ead6a7;font: 600 var(--texto-2)/1 system-ui,sans-serif;cursor:pointer}.nucleus-home-hint:disabled{opacity:.62;cursor:wait}.nucleus-home-error{color:#c47a5a!important}
-.nucleus-preview-pool { position:absolute; width:34%; aspect-ratio:1; border-radius:46% 54% 63% 37%/55% 43% 57% 45%; background:radial-gradient(circle at 42% 38%,color-mix(in srgb,var(--emotion-color) 58%,transparent),color-mix(in srgb,var(--emotion-color) 14%,transparent) 44%,transparent 72%); filter:blur(17px); opacity:.36; mix-blend-mode:screen; transform:translate(-50%,-50%); animation:nucleus-preview-plasma 8.6s ease-in-out infinite alternate; animation-delay:calc(var(--plasma-index) * -1.2s); }
+.nucleus-preview-pool { position:absolute; width:52%; aspect-ratio:1; border-radius:46% 54% 63% 37%/55% 43% 57% 45%; background:radial-gradient(circle at 42% 38%,color-mix(in srgb,var(--emotion-color) 72%,transparent),color-mix(in srgb,var(--emotion-color) 28%,transparent) 44%,transparent 74%); filter:blur(22px); opacity:.58; transform:translate(-50%,-50%); animation:nucleus-preview-plasma 8.6s ease-in-out infinite alternate; animation-delay:calc(var(--plasma-index) * -1.2s); }
 .nucleus-preview-point { position:absolute; z-index:20; display:grid; width:46px; height:46px; place-items:center; border:0; border-radius:50%; background:transparent; transform:translate(-50%,-50%); cursor:pointer; }
-.nucleus-preview-point>span { position:relative; width:10px; height:10px; border:1px solid color-mix(in srgb,var(--thought-color) 76%,#fff); border-radius:50%; background:var(--thought-color); box-shadow:0 4px 12px color-mix(in srgb,var(--thought-color) 46%,transparent),0 8px 28px color-mix(in srgb,var(--thought-color) 38%,transparent); animation:nucleus-preview-point-pulse 3.5s ease-in-out infinite; animation-delay:calc(var(--thought-index) * -.48s); }
-.nucleus-preview-point>span::after { content:''; position:absolute; inset:-7px; border:1px solid color-mix(in srgb,var(--thought-color) 34%,transparent); border-radius:50%; transform:scale(.72); transition:transform var(--dur-2) cubic-bezier(.16,1,.3,1),border-color var(--dur-2) ease; }
+.nucleus-preview-point>span { --spark: calc(8.5px + 5.5px * (1 - min(var(--thought-freshness, 8), 8) / 8)); position:relative; width: var(--spark); height: var(--spark); border:1px solid color-mix(in srgb,var(--thought-color) 70%,#ead6a7); border-radius:50%; background:var(--thought-color); box-shadow:0 0 12px color-mix(in srgb,var(--thought-color) 58%,transparent),0 8px 26px color-mix(in srgb,var(--thought-color) 42%,transparent); }
+.nucleus-preview-point>span::after { content:''; position:absolute; inset:-8px; border:1px solid color-mix(in srgb,var(--thought-color) 38%,transparent); border-radius:50%; transform:scale(.72); transition:transform var(--dur-2) cubic-bezier(.16,1,.3,1),border-color var(--dur-2) ease; }
+.nucleus-preview-point.is-newest>span { animation:nucleus-preview-point-pulse 3.8s ease-in-out infinite; }
+.nucleus-preview-point.is-newest>span::after { border-color:color-mix(in srgb,var(--thought-color) 58%,#ead6a7); transform:scale(1); }
 .nucleus-preview-point:hover>span::after,.nucleus-preview-point:focus-visible>span::after { border-color:var(--thought-color); transform:scale(1); }
 .nucleus-preview-point:focus-visible { outline:2px solid #f4efe5; outline-offset:1px; }
 .nucleus-preview-layer { position:fixed; z-index:90; inset:0; display:grid; place-items:center; padding:1.25rem; background:rgba(4,6,10,.72); backdrop-filter:blur(6px); }
@@ -1230,8 +1374,8 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer) })
 .nucleus-preview-reading>svg { width:1.45rem; color:var(--thought-color); filter:drop-shadow(0 7px 14px color-mix(in srgb,var(--thought-color) 26%,transparent)); }
 .nucleus-preview-reading p { max-height:min(46svh,22rem); margin:1rem 0 0; overflow:auto; color:#f4efe5; line-height:1.65; white-space:pre-wrap; }
 .nucleus-preview-card-enter-active,.nucleus-preview-card-leave-active { transition:opacity var(--dur-2) ease; }.nucleus-preview-card-enter-active .nucleus-preview-reading,.nucleus-preview-card-leave-active .nucleus-preview-reading { transition:transform var(--dur-3) cubic-bezier(.16,1,.3,1),filter var(--dur-2) ease; }.nucleus-preview-card-enter-from,.nucleus-preview-card-leave-to { opacity:0; }.nucleus-preview-card-enter-from .nucleus-preview-reading,.nucleus-preview-card-leave-to .nucleus-preview-reading { filter:blur(5px); transform:translateY(1rem) scale(.94); }
-@keyframes nucleus-light-breathe { 0%,100% { opacity: .45; filter: blur(.2px); } 52% { opacity: 1; filter: blur(0); } }
-@keyframes nucleus-cloth-current { from { background-position:42% 44%; filter:brightness(.96); } to { background-position:58% 56%; filter:brightness(1.06); } }
+@keyframes nucleus-light-breathe { 0%,100% { opacity: .55; } 52% { opacity: 1; } }
+@keyframes nucleus-cloth-current { from { background-position:42% 44%, 50% 50%; } to { background-position:58% 56%, 50% 50%; } }
 @keyframes nucleus-preview-plasma { 0% { border-radius:46% 54% 63% 37%/55% 43% 57% 45%; filter:blur(19px) brightness(.86); transform:translate(-53%,-48%) scale(.86); } 50% { border-radius:61% 39% 42% 58%/43% 62% 38% 57%; filter:blur(14px) brightness(1.08); transform:translate(-46%,-54%) scale(1.12); } 100% { border-radius:39% 61% 54% 46%/64% 38% 62% 36%; filter:blur(17px) brightness(.96); transform:translate(-50%,-47%) scale(.96); } }
 @keyframes nucleus-preview-point-pulse { 0%,100% { opacity:.64; transform:scale(.78); } 50% { opacity:1; transform:scale(1.18); } }
 
@@ -1299,7 +1443,6 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer) })
   .golden-daruma-practice { width:min(100%,30rem); margin-inline:auto; }
   .golden-daruma-capture textarea { min-height:3.6rem; }
   .golden-daruma-capture>button { width:100%; }
-  .nucleus-light-lab { transform: rotate(var(--angle)) translateY(-7rem) rotate(calc(var(--angle) * -1)); }
   .umbral-datum { min-width: 4.5rem; padding: .45rem .5rem .5rem; }
   .umbral-datum dd { max-width: 7.5rem; font-size: var(--texto-5); }
   .umbral-datum-number { left: 0; right: auto; top: calc(0% + 1.15rem); bottom: auto; }
@@ -1316,7 +1459,7 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer) })
   .umbral-threshold-notes .umbral-day-cluster>button { min-height: 2.55rem; }
   .nucleus-preview-layer { align-items:end; padding:1rem 1rem calc(7.25rem + env(safe-area-inset-bottom)); }
   .nucleus-preview-reading { width:100%; }
-  .nucleus-capture-lab { width:100%; padding-top:1rem; }
+  .nucleus-capture-lab { width:100%; padding-top:.15rem; }
   .nucleus-capture-lab textarea { min-height:3.4rem; }
 }
 
@@ -1342,7 +1485,7 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer) })
   .golden-daruma-capture textarea { min-height:3.5rem; max-height:5rem; }
   .golden-daruma-capture>button { width:auto; }
   .golden-daruma-hint,.golden-daruma-saved { grid-column:1/-1; margin:0; }
-  .nucleus-cloth-lab { width: min(19rem, 66svh) !important; }
+  .nucleus-cloth-lab { width: min(22rem, 58svh); }
 }
 
 @media (min-width: 640px) {
@@ -1350,8 +1493,8 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer) })
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .lab-orbit, .balance-sky-ring, .balance-home-blossom, .world-flower-lab, .lab-flower-shadow, .lab-petal-surface, .lab-flower-core, .lab-flower-seed, .nucleus-cloth-lab, .nucleus-light-lab, .nucleus-preview-pool, .nucleus-preview-point>span, .golden-daruma-entry-art svg, .umbral-datum, .moon-atmosphere, .tarot-card { animation: none; }
-  .umbral-light-rays{display:none}
+  .lab-orbit, .balance-sky-ring, .balance-home-blossom, .world-flower-lab, .lab-flower-shadow, .lab-petal-surface, .lab-flower-seed, .nucleus-cloth-lab, .nucleus-light-lab, .nucleus-preview-pool, .nucleus-preview-point>span, .golden-daruma-entry-art svg, .umbral-datum, .moon-atmosphere, .tarot-card { animation: none; }
+  .umbral-light-rays,.mundos-night-sky{display:none}
   .balance-home-blossom { opacity:1; filter:none; transform:translate(-50%,-50%); }
   .balance-overlay-enter-active,.balance-overlay-leave-active,.balance-overlay-enter-active .balance-overlay-sheet,.balance-overlay-leave-active .balance-overlay-sheet { transition-duration:1ms; }
   .axis-heading-lab { animation: none; }
@@ -1371,18 +1514,59 @@ onBeforeUnmount(() => { window.clearTimeout(nucleusHintTimer) })
 .tailwind-lab>.aureo-app-frame>aside{position:relative;border-right-color:rgba(201,168,106,.13)!important;background:linear-gradient(128deg,rgba(12,17,27,.94),rgba(8,11,17,.76))!important;backdrop-filter:blur(18px)}.tailwind-lab>.aureo-app-frame>aside::after{content:'';position:absolute;right:-1px;top:7%;bottom:7%;width:1px;background:linear-gradient(transparent,var(--zodiac-color),transparent);opacity:.52}.desktop-axis-nav{gap:.55rem!important}.desktop-axis-nav button{min-height:3.25rem!important;border-radius: var(--radio-pill)!important;padding-inline:1rem!important;transition:background-color var(--dur-2) ease,color var(--dur-2) ease,transform var(--dur-2) cubic-bezier(.16,1,.3,1)!important}.desktop-axis-nav button:hover{background:color-mix(in srgb,var(--zodiac-color) 8%,transparent)!important;transform:translateX(.2rem)}.desktop-axis-active{background:linear-gradient(90deg,color-mix(in srgb,var(--zodiac-color) 15%,transparent),rgba(201,168,106,.06),transparent)!important}.desktop-axis-nav button::before{left:.35rem!important;height:1.55rem!important}.desktop-axis-active .desktop-axis-icon{box-shadow:0 0 0 4px color-mix(in srgb,var(--zodiac-color) 8%,transparent),0 10px 24px rgba(0,0,0,.2)}
 .axis-home-lab{display:grid;gap:.35rem;min-height:0;padding:.1rem 0 .25rem;border-radius:0}.axis-home-lab:not(:has(.umbral-threshold-notes)){min-height:calc(100svh - 9.25rem);align-content:center}.axis-heading-lab{padding:.05rem 0 .35rem}.axis-heading-lab::after{width:min(42vw,8.5rem);background:linear-gradient(90deg,transparent,#c9a86a 26%,var(--zodiac-color) 60%,transparent)}.ritual-stage-lab>.umbral-carta{min-height:15.5rem}.ritual-stage-lab>.worlds-stage-lab{min-height:22rem}
 .umbral-datum{border-radius:47% 53% 46% 54%/52% 44% 56% 48%;background:linear-gradient(135deg,rgba(17,24,36,.84),rgba(8,11,17,.72));backdrop-filter:blur(14px)}.umbral-datum-number{padding-inline:1rem}.umbral-datum-arcana{border-radius:45% 55% 52% 48%/58% 46% 54% 42%}.tarot-card{border-radius:8px 8px 14px 8px}.umbral-day-cluster>button,.umbral-pulse-card{border-radius: var(--radio-organico-1)!important;background:linear-gradient(125deg,rgba(22,28,40,.56),rgba(8,11,17,.2))!important;backdrop-filter:blur(11px)}
-.worlds-stage-lab::before{width:min(91vw,35rem);border-color:color-mix(in srgb,var(--zodiac-color) 28%,rgba(201,168,106,.1));box-shadow:0 0 70px color-mix(in srgb,var(--zodiac-color) 8%,transparent)}.world-flower-lab{filter:drop-shadow(0 22px 34px rgba(0,0,0,.3))}.lab-world-petal{cursor:pointer}.lab-world-petal:hover .lab-petal-surface,.lab-world-petal:focus .lab-petal-surface{filter:brightness(1.16) saturate(1.08)}
+.worlds-stage-lab::before{width:min(91vw,35rem);border:0;box-shadow:inset 0 0 70px rgba(0,0,0,.28),0 0 70px color-mix(in srgb,var(--zodiac-color) 8%,transparent);-webkit-mask-image:radial-gradient(circle,#000 28%,transparent 72%);mask-image:radial-gradient(circle,#000 28%,transparent 72%)}.world-flower-lab{filter:none;position:relative;z-index:1}.lab-world-petal{cursor:pointer}
 .balance-home-actions{margin:.2rem auto 0;width:min(100%,32rem);padding:.25rem;border:1px solid rgba(201,168,106,.16);border-radius: var(--radio-organico-2);background:rgba(11,16,24,.42);backdrop-filter:blur(14px)}.balance-home-reading{margin:0 auto .1rem;padding:0;border-radius:0;background:transparent;backdrop-filter:none}.balance-home-caption{margin-top:.45rem}.balance-home-value strong{text-shadow:0 12px 30px rgba(0,0,0,.42)}
-.nucleus-home-gate{border:1px solid rgba(129,115,183,.26);border-radius:46% 54% 48% 52%/42% 56% 44% 58%;box-shadow:0 28px 70px rgba(0,0,0,.24);background:radial-gradient(circle at 46% 20%,rgba(129,115,183,.18),transparent 47%),rgba(9,13,21,.52);backdrop-filter:blur(15px)}.nucleus-home-notes button{border-radius:50%!important;background:rgba(13,18,29,.72)!important}.nucleus-home-notes button.hint{background:#c9a86a!important;color:#080b11!important;box-shadow:0 0 18px rgba(201,168,106,.45)}.nucleus-home-hint{border-radius: var(--radio-pill)}.nucleus-capture-lab{padding:.85rem 1.05rem .8rem;border:1px solid rgba(129,115,183,.22);border-radius: var(--radio-organico-2);background:rgba(9,13,21,.46);backdrop-filter:blur(14px)}.nucleus-capture-lab textarea{border-radius: var(--radio-organico-1)}.nucleus-capture-lab button{border-radius: var(--radio-pill)}
+.nucleus-home-gate{border:1px solid rgba(129,115,183,.26);border-radius:46% 54% 48% 52%/42% 56% 44% 58%;box-shadow:0 28px 70px rgba(0,0,0,.24);background:radial-gradient(circle at 46% 20%,rgba(129,115,183,.18),transparent 47%),rgba(9,13,21,.52);backdrop-filter:blur(15px)}.nucleus-home-notes button{border-radius:50%!important;background:rgba(13,18,29,.72)!important}.nucleus-home-notes button.hint{background:#c9a86a!important;color:#080b11!important;box-shadow:0 0 18px rgba(201,168,106,.45)}.nucleus-home-hint{border-radius: var(--radio-pill)}.nucleus-capture-lab button{border-radius: var(--radio-pill)}
 .golden-daruma-practice{padding:clamp(.7rem,1.6vw,1.05rem);border:1px solid color-mix(in srgb,var(--sign-color) 22%,rgba(201,168,106,.18));border-radius: var(--radio-organico-2);background:linear-gradient(135deg,color-mix(in srgb,var(--sign-color) 7%,rgba(8,11,17,.5)),rgba(8,11,17,.22));backdrop-filter:blur(15px)}.golden-daruma-capture>button{border-radius: var(--radio-pill)}
 .lab-mobile-nav{border-radius: var(--radio-pill)!important;background:linear-gradient(135deg,rgba(14,20,31,.95),rgba(8,11,17,.88))!important;box-shadow:0 16px 40px rgba(0,0,0,.36),inset 0 1px rgba(234,214,167,.08)}.lab-mobile-nav button{border-radius: var(--radio-pill)!important}.mobile-axis-active{background:color-mix(in srgb,var(--zodiac-color) 11%,transparent)!important}
-@media(max-width:760px){.umbral-light-rays{opacity:.36}.tailwind-lab[data-lumen="dia"] .umbral-light-rays{opacity:.55}.tailwind-lab[data-lumen="noche"] .umbral-light-rays{opacity:.22}.ritual-stage-lab{min-height:0}.ritual-stage-lab>.umbral-carta,.umbral-carta{min-height:13.5rem}.axis-home-lab{padding:.05rem 0 .2rem;border-radius:0}.axis-home-lab:not(:has(.umbral-threshold-notes)){min-height:calc(100svh - 10rem)}.nucleus-home-gate{border-radius: var(--radio-organico-3)}.nucleus-capture-lab,.golden-daruma-practice{border-radius: var(--radio-organico-2)}.umbral-datum{transform:scale(.86)}.golden-daruma-capture textarea{min-height:3.6rem}}
+@media(max-width:760px){.umbral-light-rays{opacity:.36}.tailwind-lab[data-lumen="dia"] .umbral-light-rays{opacity:.55}.tailwind-lab[data-lumen="noche"] .umbral-light-rays{opacity:.22}.ritual-stage-lab{min-height:0}.ritual-stage-lab>.umbral-carta,.umbral-carta{min-height:13.5rem}.axis-home-lab{padding:.05rem 0 .2rem;border-radius:0}.axis-home-lab:not(:has(.umbral-threshold-notes)){min-height:calc(100svh - 10rem)}.nucleus-home-gate{border-radius: var(--radio-organico-3)}.golden-daruma-practice{border-radius: var(--radio-organico-2)}.umbral-datum{transform:scale(.86)}.golden-daruma-capture textarea{min-height:3.6rem}}
 @media(min-width:1024px){.aureo-content-width{max-width:72rem}.axis-home-lab{padding:.15rem 0 .3rem}.axis-home-lab:not(:has(.umbral-threshold-notes)){min-height:calc(100svh - 4.5rem)}
 /* Umbral también ocupa el alto: encabezado arriba, composición al centro, notas abajo.
    Sin esto el contenido queda apilado en el 60% superior y el resto se lee como inacabado. */
 .axis-home-lab:has(.umbral-threshold-notes){min-height:calc(100svh - 4.5rem);grid-template-rows:auto minmax(0,1fr) auto}
 .axis-home-lab:has(.umbral-threshold-notes)>.ritual-stage-lab{display:grid;align-content:center}
 .aureo-moon{width:7rem;height:7rem}
-.ritual-stage-lab>.umbral-carta{min-height:20rem}.axis-heading-lab{padding:.05rem 0 .4rem}.axis-welcome-title{font-size:clamp(var(--texto-8),2.8vw,var(--texto-9))}.umbral-heading .axis-welcome-title{font-size:clamp(var(--texto-5),1.8vw,var(--texto-6))}.ritual-stage-lab{min-height:0}.umbral-threshold-notes{padding-bottom:.5rem}.world-flower-lab{width:min(62vw,34rem)}.worlds-stage-lab::before{width:min(72vw,33rem)}.balance-field-lab{min-height:0}.balance-tree-entry{width:min(100%,23rem)}.nucleus-cloth-lab{max-width:17.5rem!important}.golden-daruma-home{width:min(100%,38rem);grid-template-columns:minmax(12rem,14.5rem) minmax(16rem,1fr);gap:1.15rem}}
-@media(prefers-reduced-motion:reduce){.desktop-axis-nav button:hover{transform:none}.lab-world-petal:hover .lab-petal-surface{filter:none}.aureo-moon,.umbral-light-rays{transition-duration:1ms}}
+.ritual-stage-lab>.umbral-carta{min-height:20rem}.axis-heading-lab{padding:.05rem 0 .4rem}.axis-welcome-title{font-size:clamp(var(--texto-8),2.8vw,var(--texto-9))}.umbral-heading .axis-welcome-title{font-size:clamp(var(--texto-5),1.8vw,var(--texto-6))}.ritual-stage-lab{min-height:0}.umbral-threshold-notes{padding-bottom:.5rem}.world-flower-lab{width:min(62vw,34rem)}.worlds-stage-lab::before{width:min(72vw,33rem)}.balance-field-lab{min-height:0}.balance-tree-entry{width:min(100%,23rem)}.nucleus-cloth-lab{width:min(100%,26rem)}.golden-daruma-home{width:min(100%,38rem);grid-template-columns:minmax(12rem,14.5rem) minmax(16rem,1fr);gap:1.15rem}}
+@media(prefers-reduced-motion:reduce){.desktop-axis-nav button:hover{transform:none}.aureo-moon,.umbral-light-rays{transition-duration:1ms}}
+
+.world-fab{
+  --world-petal:#c9a86a;
+  position:fixed;
+  z-index:45;
+  right:max(1rem,env(safe-area-inset-right));
+  bottom:calc(6rem + env(safe-area-inset-bottom));
+  display:grid;
+  width:48px;
+  height:48px;
+  padding:0;
+  overflow:hidden;
+  place-items:center;
+  border:1px solid color-mix(in srgb,var(--world-petal) 72%,transparent);
+  border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,color-mix(in srgb,var(--world-petal) 36%,transparent),#080b11 72%);
+  color:color-mix(in srgb,var(--world-petal) 42%,#f4efe5);
+  box-shadow:0 16px 36px rgba(0,0,0,.38);
+  cursor:pointer;
+}
+.world-fab.is-care{--world-petal:#9b7d9b}
+.world-fab.is-vinculos{--world-petal:#c9a86a}
+.world-fab.is-travesias{--world-petal:#7da797}
+.world-fab.is-hobbies{--world-petal:#c9a86a}
+.world-fab.is-decretos{--world-petal:#8173b7}
+.world-fab svg{width:1.05rem;pointer-events:none}
+.world-fab input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.world-fab:focus-visible,.world-fab:focus-within{outline:2px solid color-mix(in srgb,var(--world-petal) 70%,#f4efe5);outline-offset:3px}
+.world-fab.loading{opacity:.68;pointer-events:none}
+.world-fab:active{transform:scale(.97)}
+.fab-slot-enter-active,.fab-slot-leave-active{transition:opacity var(--dur-4) var(--ease-in-out),transform var(--dur-4) var(--ease-in-out)}
+.fab-slot-leave-active{pointer-events:none}
+.fab-slot-enter-from,.fab-slot-leave-to{opacity:0;transform:scale(.88)}
+@media(min-width:1024px){.world-fab{bottom:2rem}}
+@media(prefers-reduced-motion:reduce){.fab-slot-enter-active,.fab-slot-leave-active{transition-duration:1ms}}
+</style>
+<style>
+body:has(.care-composer-layer) .world-fab {
+  opacity: 0;
+  pointer-events: none;
+}
 </style>

@@ -12,6 +12,7 @@ const REMOTE_COLLECTIONS: Readonly<Record<string, RemoteAxis>> = {
   plantas: 'mundos',
   hobbies: 'mundos',
   travesias: 'mundos',
+  locuidado_memoria: 'mundos',
   balance_movimientos: 'balance',
   balance_categorias: 'balance',
   balance_darumas: 'balance',

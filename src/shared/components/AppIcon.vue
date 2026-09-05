@@ -20,6 +20,14 @@ defineProps<{ name: string; label?: string }>()
     <template v-else-if="name === 'companions'"><circle cx="8" cy="8" r="1.7"/><circle cx="16" cy="8" r="1.7"/><circle cx="5" cy="13" r="1.5"/><circle cx="19" cy="13" r="1.5"/><path d="M8.5 18c0-2.3 1.6-4.2 3.5-4.2s3.5 1.9 3.5 4.2c0 1.3-1 2-2.1 1.5a3.3 3.3 0 0 0-2.8 0C9.5 20 8.5 19.3 8.5 18Z"/></template>
     <template v-else-if="name === 'decree'"><path d="m12 3 7 9-7 9-7-9 7-9Z"/><path d="M9 12h6"/></template>
     <template v-else-if="name === 'plants'"><path d="M12 21V9M12 13c-5 0-7-2.4-7-6 4 0 7 1.7 7 6Zm0 3c5 0 7-2.4 7-6-4 0-7 1.7-7 6Z"/></template>
+    <template v-else-if="name === 'dog'"><path d="M5 11.5c0-2.2 1.4-4 3.2-4.6L7 4.5l3.1 1.2L12 4l1.9 1.7L17 4.5l-1.2 2.4c1.8.6 3.2 2.4 3.2 4.6V17a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3v-5.5Z"/><circle cx="9.2" cy="12.2" r=".7" fill="currentColor" stroke="none"/><circle cx="14.8" cy="12.2" r=".7" fill="currentColor" stroke="none"/></template>
+    <template v-else-if="name === 'cat'"><path d="M5.5 10.5 4 4.8l5.2 2.4L12 5.2l2.8 2 5.2-2.4-1.5 5.7v6.2A3.6 3.6 0 0 1 15 20H9a3.6 3.6 0 0 1-3.5-3.3v-6.2Z"/><path d="M9 15.2c.8.7 2.2.9 3 .9s2.2-.2 3-.9"/></template>
+    <template v-else-if="name === 'bird'"><path d="M4 14.5c2.4-1.2 4-3.6 4.4-6.2C10.2 6 13 4.5 16.2 5.2c.2 2.6-1 4.8-3 6.3 3 .4 5.4 1.6 7.3 3.5-2.2.7-4.7.4-6.7-.6-.2 2.2-1.6 4.1-3.8 5.1C8.2 17.8 6 16.4 4 14.5Z"/></template>
+    <template v-else-if="name === 'hamster'"><circle cx="12" cy="13" r="6.2"/><circle cx="7.2" cy="8.2" r="2.3"/><circle cx="16.8" cy="8.2" r="2.3"/><circle cx="10.2" cy="12.4" r=".6" fill="currentColor" stroke="none"/><circle cx="13.8" cy="12.4" r=".6" fill="currentColor" stroke="none"/></template>
+    <template v-else-if="name === 'paw'"><circle cx="12" cy="16.2" r="3.1"/><circle cx="6.8" cy="11.2" r="1.7"/><circle cx="10" cy="8.4" r="1.7"/><circle cx="14" cy="8.4" r="1.7"/><circle cx="17.2" cy="11.2" r="1.7"/></template>
+    <template v-else-if="name === 'interior'"><path d="M4.5 11 12 5l7.5 6v8.5H4.5V11Z"/><path d="M12 21v-6"/></template>
+    <template v-else-if="name === 'exterior'"><path d="M12 21V11M12 13c-4.5 0-7-2-7-5.5 3.6 0 7 1.4 7 5.5Zm0 2c4.5 0 7-2 7-5.5-3.6 0-7 1.4-7 5.5Z"/><path d="M4 6.2c2.4-1.6 5-1.8 8-1.8s5.6.2 8 1.8"/></template>
+    <template v-else-if="name === 'heart'"><path d="M12 19.4S4.6 14.2 4.6 9.8A3.9 3.9 0 0 1 12 7.6a3.9 3.9 0 0 1 7.4 2.2c0 4.4-7.4 9.6-7.4 9.6Z"/></template>
     <template v-else-if="name === 'hobbies'"><circle cx="12" cy="12" r="8"/><path d="M8.5 14.5c1.8 1.5 5.2 1.5 7 0M9 9h.01M15 9h.01"/></template>
     <template v-else-if="name === 'journeys'"><path d="M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0Z"/><circle cx="12" cy="10" r="2"/></template>
     <template v-else-if="name === 'book'"><path d="M4 5.5c3-1 5.7-.5 8 1.5v13c-2.3-2-5-2.5-8-1.5v-13Zm16 0c-3-1-5.7-.5-8 1.5v13c2.3-2 5-2.5 8-1.5v-13Z"/></template>

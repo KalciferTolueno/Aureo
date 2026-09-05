@@ -1,6 +1,6 @@
 # Decisiones confirmadas por la clienta — Áureo
 
-Última consolidación: 3 de septiembre de 2026.
+Última consolidación: 4 de septiembre de 2026.
 
 Esta es la referencia rápida para desarrolladores y asistentes de IA. Resume decisiones confirmadas; ante dudas se debe consultar también la especificación completa del eje.
 
@@ -11,7 +11,7 @@ Esta es la referencia rápida para desarrolladores y asistentes de IA. Resume de
 - La fuente oficial usa Vue 3, TypeScript, Vite, Pinia y Vue Router. Las referencias antiguas a Vanilla JS como arquitectura permanente están obsoletas.
 - La experiencia debe sentirse como una aplicación continua, con fondo y navegación persistentes.
 - El scroll del documento es flotante: no reserva un gutter ni empuja el contenido al cambiar de eje.
-- Los efectos de iluminación de los espacios internos forman parte del fondo continuo; no se recortan en los límites de cada sección.
+- Los efectos de iluminación de los espacios internos forman parte del fondo continuo; no se recortan en los límites de cada sección. El aura no puede dibujar un recuadro junto al scrollbar. Contrato y regresiones: `docs/product/AURA_CAMPO_CONTINUO.md`.
 - La identidad general es Noche + Oro. El color zodiacal de la persona aparece como un matiz sutil en toda la experiencia sin reemplazar los colores base; Edad Dorada lo expresa con mayor presencia.
 - Por ahora no existe distinción funcional entre versión gratuita y Premium: los cinco ejes permanecen accesibles.
 - La IA queda fuera de la Fase 1 con 20 testers. Una futura IA reflejaría patrones; no será un chatbot ni dará consejos.
@@ -28,6 +28,15 @@ Esta es la referencia rápida para desarrolladores y asistentes de IA. Resume de
 - Se mantiene el prefijo histórico `aureo_`.
 - Toda migración debe preservar datos y estar versionada.
 - Supabase queda detrás de la interfaz de almacenamiento; las pantallas no se conectan directamente al proveedor.
+
+## Configuración
+
+- Es una vista interna en `/configuracion`, no una tarjeta flotante. El encabezado es solo el título, en dos voces: «Configuración» y «de mi Áureo». Se sale por la navegación de ejes, no por un sello de volver.
+- Las secciones (Tú, Color, Avisos, Espacio, Promesa, Copia) se recorren en un filete de nombres en una sola fila; el panel activo es una placa Noche (velo y filamento, no un recuadro). En Tú el nombre es el objeto.
+- Se puede editar nombre, correo local y fecha de nacimiento. El correo no abre cuenta ni sincronización. Cambiar la fecha recalcula el signo y el número personal.
+- El color de interfaz es el matiz zodiacal: doce destellos en un pozo. El oro y la Noche no se sustituyen. Elegir un destello cambia el `signo` del perfil.
+- El interruptor de notificaciones guarda una preferencia local y, al activarse, pide permiso al navegador. No envía resúmenes semanales de Mi Balance (siguen aplazados). Núcleo nunca se nombra en un aviso.
+- Se conservan Lo que cuido, copia/restauración y borrado con doble toque.
 
 ## Onboarding
 
@@ -70,32 +79,53 @@ Esta es la referencia rápida para desarrolladores y asistentes de IA. Resume de
 
 ### Vínculos
 
+- El pétalo y el grid se llaman **Vínculos**. El encabezado interno permanece **Mi Constelación**.
 - Tipos: Amor, Familia, Amistad, Raíz y Guía.
-- Estado vacío: “Cada persona que agregas enciende un punto.”
+- Estado vacío: “Tu constelación te espera. Cada vínculo que agregas enciende un punto.”
 - Campos: “¿Cómo se llama?” y “¿Cuál es su signo?”.
-- Mi Constelación muestra directamente el mapa orbital y su leyenda, sin una frase explicativa adicional antes de las órbitas.
+- Mi Constelación muestra directamente el mapa orbital y su leyenda horizontal, sin una frase explicativa adicional antes de las órbitas.
+- Al tocar una estrella aparece un tooltip anclado: nombre, categoría · signo, y nota truncada. Un segundo toque en la misma estrella abre la nota completa. Cierra al tocar fuera u otra estrella.
 
 ### Decretos
 
 - Categorías: Ser, Vivir y Tener. Acción: “Lo decreto”.
-- La activación es un ritual de tres pulsaciones; su intensidad aumenta con el uso.
-- Mantener presionado permite marcar “Esto ya es mío”.
+- Placeholders: Soy… / Disfruto de... / Tengo... El vacío muestra un ejemplo en cursiva al 35% según la dimensión.
+- El sello + flota en el hueco del destello (pétalo lavanda) y abre una placa Noche para escribir; la lista de frases ocupa el campo.
+- La línea de apertura es “Lo que decretas, ya es.”
+- La primera visita muestra una sola vez “Lo visualizo. Lo siento. Lo decreto.” (`decretos_bienvenida`, local, no se sincroniza). Con decretos propios, al entrar aparece uno al azar antes de la lista.
+- La activación es un ritual a pantalla completa `#080B11`: tres pulsaciones, haptic 10 ms, “Decretado.” y cierre solo. Nunca se muestra el número de activaciones; la intensidad se lee en opacidad 50/70/85/100 y un brillo dorado desde la séptima.
+- Badges: Ser `#7A6AAA`, Vivir `#5DB389`, Tener `#C9A86A`.
+- Mantener presionado permite marcar “Esto ya es mío”: el texto pasa a oro y queda una fecha discreta.
 - Siete activaciones pueden generar un nodo sin texto en Edad Dorada con origen `decreto_mundos`.
 
 ### Hobbies
 
-- La metáfora es un jardín de sensaciones, no una lista administrativa.
-- Entrada mínima: nombre y “¿Cómo te hace sentir?”. Estados: activo y pausa.
-- La acción se llama “Lo viví hoy”.
-- El flow máximo puede crear un nodo sin texto en Edad Dorada con origen `hobby_flow_total`.
+- La metáfora es una espiral áurea de momentos por hobby (ángulo 137,5°, lenguaje M6). Cada momento es un destello aparte; el más nuevo es más grande y luminoso.
+- Frase editorial: “Lo que te devuelve a ti — ya sea viviéndolo, o extrañándolo.”
+- Entrada mínima: “¿Qué es?” y “¿Cómo te hace sentir?”. Acción de creación: “Agregar”.
+- El sello + flota en el hueco del destello (pétalo oro) y abre una tarjeta flotante para sumar una espiral; el jardín ocupa el campo.
+- Dentro del hobby, un solo gesto: “Dejar un momento aquí”, con “¿Qué pasó con esto, hoy?”. Confirmación: “Quedó guardado en tu espiral.”
+- No hay estados Activo/Pausa, ni “Lo viví hoy”, ni reactivar. Los hobbies no se eliminan. El orden es por último momento, descendente.
+- El campo histórico `estado` se conserva en datos; deja de usarse en la interfaz.
 
 ### Travesías
 
-- Registra lugares visitados o decretados y el campo opcional “¿Qué viviste ahí?”.
-- Las coordenadas son persistentes.
-- La eliminación usa un diálogo interno, nunca `window.confirm()`.
-- Travesías se representa sobre un mapa y conserva coordenadas reales junto con el recuerdo opcional “¿Qué viviste ahí?”.
-- Por decisión del 29-08-2026, el mapa estático de Travesías se reemplaza por un mapa Leaflet interactivo: permite buscar cualquier lugar mediante OpenStreetMap o tocar el mapa. Las consultas de búsqueda son explícitas, no se muestran coordenadas ni mensajes redundantes, y los registros continúan guardándose mediante el repositorio existente.
+- La metáfora es un baúl de postales, no un mapa. Esto sustituye la decisión del 29-08-2026 de Leaflet interactivo.
+- Estados persistidos: `visitado` | `decretado`. En interfaz: **Vivido** / **Por vivir**.
+- La búsqueda de lugar se mantiene (Nominatim/OpenStreetMap); el resultado nace como postal, no como pin. Las coordenadas se conservan y no se muestran.
+- “¿Qué viviste ahí?” se habilita al vivir la postal. La eliminación usa el diálogo interno “¿Quieres que esta postal se vaya?” / “Sí, que se vaya” / “No, quedarse.”
+- El sello del baúl es la flor de cinco pétalos de Mundos.
+- El sello + flota en el hueco del destello (pétalo salvia) y abre una tarjeta flotante para guardar una postal; el baúl ocupa el campo.
+
+### Lo que cuido
+
+- Compañeros y Plantas viven bajo este mural. La foto es opcional.
+- Estado vacío: “Lo que cuido, también me cuida.”
+- Compañero: selector táctil Perro, Gato, Ave, Hámster, Otra mascota (`AppIcon`, sin emoji). Planta: Interior / Exterior.
+- Cuidado colapsado: nacimiento y próximo control. La equivalencia en años humanos solo para perro y gato: “~ N en años de los tuyos.”
+- Marco: destellos dorados en dos esquinas y sello con las iniciales del perfil.
+- **En mi corazón** guarda memoriales en `locuidado_memoria` (clave `aureo_locuidado_memoria`). Foto opcional, nombre y frase con placeholder “Lo que se queda de vos.”
+- Los estilos artísticos sumi-e / Ghibli y el export del mural quedan pendientes; no implementarlos sin cierre explícito.
 
 ## Eje 3 — Mi Balance
 
@@ -159,6 +189,7 @@ Esta es la referencia rápida para desarrolladores y asistentes de IA. Resume de
 No implementar sin una decisión posterior explícita:
 
 - Exportar murales o composiciones a historias de Instagram.
+- Estilos artísticos sumi-e / Ghibli del mural de Lo que cuido, y si aplican dentro de la app o solo al compartir.
 - Integración de registros mediante WhatsApp.
 - Generación automática de obras o imágenes para Hobbies.
 - Notificaciones o resúmenes semanales de Mi Balance.

@@ -2,7 +2,7 @@
 document: aureo-ai-handoff
 status: canonical
 audience: coding-agents-and-maintainers
-last_verified: 2026-09-03
+last_verified: 2026-09-05
 workspace_root: D:\Work - TIgrr\Aureo
 canonical_codebase: aureo-web
 active_product_surface: tailwind
@@ -21,8 +21,9 @@ Antes de modificar el producto, leer en este orden:
 1. `docs/AI_HANDOFF.md` — estado técnico y operativo vigente.
 2. `docs/product/DECISIONES_CLIENTA.md` — decisiones funcionales vinculantes.
 3. `PRODUCT.md` — propósito, público, voz y compromisos de marca.
-4. La especificación completa del eje afectado, ubicada en la raíz del workspace.
-5. `docs/architecture/ADR-001-vue-3-source-of-truth.md` si el cambio afecta arquitectura o versiones.
+4. `docs/product/AURA_CAMPO_CONTINUO.md` si el cambio toca workspace, header, animación de entrada, `filter`, `overflow` o `.workspace-aura`.
+5. La especificación completa del eje afectado, ubicada en la raíz del workspace.
+6. `docs/architecture/ADR-001-vue-3-source-of-truth.md` si el cambio afecta arquitectura o versiones.
 
 Orden para resolver contradicciones:
 
@@ -152,6 +153,7 @@ El inventario exacto de solicitudes, archivos modificados, contratos preservados
 ## Identidad visual y experiencia común
 
 - Voz íntima, serena, contemplativa y no clínica.
+- Identidad Noche + Oro; el diseño de interfaz sigue `.cursor/skills/aureo-design/SKILL.md` (no Impeccable).
 - Paleta base: Noche, Marfil, Oro y Cosmos.
 - El color zodiacal es una capa secundaria; no reemplaza el oro, el marfil ni la noche.
 - Fondo estelar continuo, símbolos orbitales y jerarquía editorial.
@@ -163,7 +165,18 @@ El inventario exacto de solicitudes, archivos modificados, contratos preservados
 - El serif se reserva para lo que se lee. Los rótulos de sección van en sans, versalitas y con `letter-spacing`.
 - Ningún control por debajo de `--toque`. Si agrandarlo rompe la composición, ampliar el área con un pseudo-elemento en lugar de bajar el mínimo.
 - Los paneles y lecturas flotantes deben permanecer en la misma sección cuando la usuaria lo haya pedido; no introducir navegación innecesaria.
-- El aura compartida de los espacios internos se extiende fuera del encabezado y de la columna de contenido para integrarse con el fondo continuo hasta el borde móvil; ni la animación de entrada ni `.tw-workspace` deben recortarla. El límite exterior permanece en `.tailwind-lab`.
+- El aura compartida de los espacios internos se extiende fuera del encabezado y de la columna de contenido para integrarse con el fondo continuo hasta el borde móvil; ni la animación de entrada ni `.tw-workspace` deben recortarla. El límite exterior permanece en `.tailwind-lab`. Contrato: `docs/product/AURA_CAMPO_CONTINUO.md`.
+
+### Regresión: borde del aura de entrada
+
+Esto vuelve a romperse en cambios de CSS. Antes de tocar `TailwindWorkspace.vue` (entrada, overflow, filter, header, `.workspace-aura`):
+
+- No aplicar `filter` a `.tw-workspace` ni a `@keyframes workspace-unveil`. El blur pinta el recuadro de la columna y deja una franja junto al scrollbar.
+- No pinzar `.workspace-aura` a `width: 100%` ni a `inset` horizontal 0 en viewports estrechos (la regla de 420 px era el fallo).
+- El aura sangra con `left/right: calc(50% - 50vw - 4rem)`. `.tw-workspace` mantiene `overflow: visible`.
+- No duplicar el padding de la barra móvil: en un detalle el workspace ya reserva `4.75rem`; el `6.7rem` de la columna solo va en portada y configuración.
+- Comprobar a ~390 px en Constelación y Lo que cuido. Pruebas: `aura cubre el fondo` y `no inventa barra de scroll` en `tests/e2e/routes.spec.ts`.
+
 - El carril del scrollbar raíz usa el mismo fondo Noche (`--cosmos`, `--document-scroll-track: #080b11`) para que el borde derecho de la aplicación no revele una franja transparente.
 - Con la superficie Tailwind u onboarding montados, el scrollbar nativo del documento se oculta (`scrollbar-width: none`) para no reservar gutter ni desplazar el contenido entre ejes. Un pulgar flotante (`OverlayScrollbar`) se superpone a la derecha, oro sobre noche, y solo aparece cuando hay overflow. La navegación móvil se ancla con `left` + `right`.
 - El cambio entre ejes reemplaza los escenarios de forma superpuesta y breve: la sección saliente queda fuera del flujo durante 120 ms y la entrante define la altura inmediatamente. No reintroducir `mode="out-in"`, desenfoque o `clip-path` en `axis-ritual`, porque provocaban un colapso intermedio y parpadeo. El encabezado compartido no usa una clave reactiva y el cambio de eje vuelve arriba sin scroll animado.
@@ -174,7 +187,7 @@ El inventario exacto de solicitudes, archivos modificados, contratos preservados
 
 - Quien llega sin `onboarding_completo` recorre el ritual de junio: bienvenida M6, privacidad, nombre íntimo, origen, revelación del signo, correo local, llave musical de tres notas, Lo que cuido y transición a Umbral. No hay decreto ni botón intermedio “Esta es mi llave”.
 - La melodía usa el mismo timbre seno y las mismas frecuencias que la copia histórica de Vercel. El hash `Do|Re|Mi` abre Núcleo. Las notas suenan al tocarlas; el acorde final pulsa al acertar.
-- **Configuración de mi Áureo** se abre desde el perfil (escritorio) o el último ítem de la barra móvil (Áureo) como vista interna en `/configuracion`. Conserva el armazón y la navegación lateral/inferior de la aplicación; solo reemplaza el área de contenido, igual que los detalles de los ejes. Incluye la promesa de privacidad, Lo que cuido, copia/restauración y borrado con doble toque; no volver a convertirla en tarjeta flotante ni en una página aislada.
+- **Configuración de mi Áureo** se abre desde el perfil (escritorio) o el último ítem de la barra móvil (Áureo) como vista interna en `/configuracion`. Conserva el armazón y la navegación. El encabezado es «Configuración» + la frase «de mi Áureo» (como saludo y máxima de Umbral), con filete corto y un destello; no hay sello de volver. Las secciones se eligen con un filete de nombres en una fila (Tú, Color, Avisos, Espacio, Promesa, Copia). El panel activo es una placa Noche: velo y filamento izquierdo, sin recuadro; en Tú el nombre es el objeto y correo/fecha van en filete. Incluye edición de nombre, correo y fecha de nacimiento; un pozo de doce destellos para el matiz de interfaz; avisos locales (permiso del navegador, sin resúmenes semanales); Lo que cuido; copia/restauración y borrado con doble toque. No volver a convertirla en una página aislada.
 - **Momento de apertura** aparece una vez al día al entrar a Umbral, con frase por signo. No cambia el fondo Noche.
 
 ### Renovación visual v1.3
@@ -201,7 +214,7 @@ La densidad de escritorio y móvil se compactó el 31-08-2026: el contenido úti
 - **Tu sello** muestra la Palabra de Poder; al abrir el mazo aparece la frase editorial del arcano en oro cursiva.
 - En Umbral, títulos y valores usan Fraunces 200–300 y etiquetas/cuerpo Spectral 300.
 - **Mi pulso de hoy** aparece en la portada de Umbral; al guardar viaja silenciosamente a Edad Dorada (`origen: pulso_umbral`) sin feedback visible en Umbral.
-- Captura rápida global mediante un sello flotante en todos los ejes excepto Núcleo. El panel muestra un campo contenido y **Sellar** siempre visible (inactivo sin texto). Al guardar pregunta *¿Para hoy o para guardar?*; “para hoy” precarga M4 y “para guardar” sella el destello en `ideas`.
+- Captura rápida global mediante un sello flotante en todos los ejes excepto Núcleo, **Lo que cuido**, **Vínculos**, **Travesías**, **Hobbies** y **Decretos**. En esos mundos el destello cede su hueco al sello + (misma esquina, cruce lento `--dur-4`); al salir, el destello vuelve. El panel muestra un campo contenido y **Sellar** siempre visible (inactivo sin texto). Al guardar pregunta *¿Para hoy o para guardar?*; “para hoy” precarga M4 y “para guardar” sella el destello en `ideas`.
 - Validación del 31-08-2026 (onboarding + configuración + Umbral): `pnpm typecheck`, `pnpm test` (5 archivos, 19 pruebas), `pnpm build` y E2E de arranque, onboarding y órbita correctos en escritorio y móvil (`--workers=1`).
 - Umbral incorpora el efecto Light Rays de Vue Bits adaptado a la identidad Noche + Oro mediante `ogl`; solo renderiza mientras está visible y se desactiva con movimiento reducido.
 - En móvil los detalles de cada eje (Vínculos, Decretos, Hobbies, Travesías, Cuidado, Balance, Núcleo y Edad Dorada) se abren como hoja flotante inferior (patrón app) con botón de cierre, en lugar de reemplazar toda la vista; en escritorio conservan la vista completa.
@@ -220,20 +233,23 @@ La densidad de escritorio y móvil se compactó el 31-08-2026: el contenido úti
 ### Mundos
 
 - La portada no repite el título grande `Mundos`; conserva el nombre en la navegación y un encabezado semántico oculto para accesibilidad.
-- Entrada mediante flor tridimensional de cinco pétalos.
-- Etiquetas radiales orientadas desde el centro hacia cada pétalo. En Hobbies y Lo que cuido el texto se voltea para no quedar boca abajo.
+- Entrada mediante flor de cinco pétalos de Noche: punta (no pastilla), filamento si el mundo tiene contenido, destello (halo + anillo + semilla) en el corazón. Sin `filter` sobre el SVG. El pétalo vacío queda en sombra, sin filamento. Detrás de la flor hay un cielo de destellos (`MundosNightSky.vue`, ogl ya presente): oro, sin ratón, recortado al pozo; se apaga con `prefers-reduced-motion`. No es el canvas Galaxy/Particles a página completa.
+- Etiquetas radiales orientadas desde el centro hacia cada pétalo. Travesías, Decretos y Hobbies se voltean para no quedar boca abajo. «Lo que cuido» se lee en dos voces para caber en la punta.
 - Cada pétalo conserva su color y abre su mundo sin salir a la interfaz original.
 
 Submundos destacados:
 
-- **Mi Constelación**: vínculos distribuidos en tres órbitas. Amor al centro; Familia en la órbita media; Amistad, Raíz y Guía en la exterior. Las estrellas abren lecturas flotantes.
+- **Vínculos**: el pétalo se llama Vínculos; adentro el encabezado sigue siendo Mi Constelación. Tres órbitas (Amor al centro; Familia en la media; Amistad, Raíz y Guía en la exterior) como hilos de luz, no anillos punteados. El tooltip de la estrella muestra nombre, categoría · signo y nota truncada; el segundo toque expande la nota. Leyenda de anillos en fila horizontal también a 380 px. El sello + flota en el hueco del destello (pétalo oro) y abre una placa Noche (filamento, destello y filete, como Configuración) para encender un vínculo; el mapa ocupa el campo.
 - Mi Constelación guarda y muestra el signo opcional de cada vínculo.
-- Mi Constelación entra directamente al mapa orbital; no presenta una frase explicativa entre el encabezado y las órbitas.
-- **Lo que cuido**: mural editorial de afiches fotográficos. Permite elegir o arrastrar imágenes, limita archivos a 12 MB y optimiza localmente a JPEG con lado máximo de 1400 px.
-- Registros históricos de Compañeros y Plantas sin imagen siguen visibles como afiches tipográficos.
-- Travesías usa un mapa Leaflet cargado solo al abrir ese detalle. El lugar y sus coordenadas se eligen siempre juntos mediante búsqueda explícita por Nominatim/OpenStreetMap o tocando el mapa con geocodificación inversa; no hay un campo “Lugar” independiente que permita separar el nombre de la posición. La interfaz no muestra latitud/longitud ni mensajes redundantes de ubicación elegida. Los mapas y la búsqueda necesitan red, pero los registros y coordenadas siguen en el repositorio local y no cambian sus claves.
-- Decretos usa un ritual de tres pulsaciones por activación; la séptima crea voluntariamente un nodo sin texto en Edad Dorada.
-- Hobbies permite pausar y retomar actividades y vuelve a hacer visible el jardín dormido sin notificaciones.
+- Mi Constelación entra directamente al mapa orbital; el vacío dice “Tu constelación te espera. Cada vínculo que agregas enciende un punto.”
+- En los detalles, **Volver** es un pozo circular de solo icono (sin la palabra); el `aria-label` conserva el destino. En los cinco mundos el título serif queda centrado (el sello de volver flota a la izquierda), también a 390 px, y llega palabra a palabra con desenfoque (`BlurText.vue`). Debajo, un destello en el centro y un filete que se apaga a ambos lados, no una raya que nace a la izquierda. Los títulos de mundo (Mi Constelación, Lo que cuido) permanecen en una sola línea.
+- **Lo que cuido**: mural editorial de afiches con un recorte orgánico leve (`--radio-organico-1`). En móvil cada columna empaca sola (4:5, 1:1, 5:4) para que no queden huecos entre afiches. Un toque abre el afiche en un campo Noche a pantalla (carrusel a ancho completo: deslizar en móvil, sellos a los lados en escritorio; Escape o la X cierran). El sello + flota en el hueco del destello (pétalo ciruela, no oro) y abre la carga de imagen; las preguntas (compañero/planta, nombre, frase) aparecen entonces en una tarjeta flotante con la preview. Si existe foto, se limita a 12 MB y se optimiza localmente a JPEG (lado máximo 1400 px en el mural, 400 px en memoriales).
+- Compañero elige especie con `AppIcon` (Perro, Gato, Ave, Hámster, Otra mascota). Planta elige Interior o Exterior. Las notas de cuidado (nacimiento y próximo control) van colapsadas; la equivalencia en años humanos solo aparece para perro y gato.
+- **En mi corazón** (`locuidado_memoria` → `aureo_locuidado_memoria`) guarda memoriales. Los estilos sumi-e / Ghibli no están implementados.
+- Identidad Noche + Oro; objetos-signatura (flor, constelación, cerezo, plasma, Daruma). El diseño de interfaz usa `.cursor/skills/aureo-design/SKILL.md`, no Impeccable.
+- Travesías es un baúl de postales (`JourneyTrunk.vue`): se mira dentro de un pozo circular de la misma familia que Constelación, disuelto en Noche (sin disco recortado ni sombra exterior). Las vividas son papeles apilados en el pozo; las por vivir se apoyan en el borde; el sello usa los pétalos en punta de Mundos, no elipses. El sello + flota en el hueco del destello (pétalo salvia) y abre una tarjeta flotante para guardar una postal; el baúl ocupa el campo. La búsqueda Nominatim se conserva; el resultado nace como postal. Los estados de datos siguen `visitado` | `decretado`; la interfaz dice Vivido / Por vivir. Las coordenadas no se muestran. El mapa Leaflet se retiró (sustituye la decisión del 29-08-2026).
+- Decretos usa un ritual de tres pulsaciones a pantalla completa; la séptima crea voluntariamente un nodo sin texto en Edad Dorada. La intensidad se lee en opacidad, nunca en un número. La frase es el objeto (serif, sin chip ni fila admin); Ser / Vivir / Tener es un filete de palabras de color, no un select «Dimensión». En la lista, la dimensión y Activar comparten una línea quieta; la frase va debajo, centrada y compacta, para que varios decretos no se apilen como fichas. El sello + flota en el hueco del destello (pétalo lavanda) y abre una placa Noche («Escribir» / «un decreto») para el filete; la lista ocupa el campo. Primera visita: `decretos_bienvenida`.
+- Hobbies es una espiral áurea por práctica (`HobbySpirals.vue`): pozo circular, filamento de oro y destellos con anillo (más nuevo, más afuera, recorriendo el brazo). El sello + flota en el hueco del destello (pétalo oro) y abre una tarjeta flotante para sumar una espiral; el jardín ocupa el campo. Al tocar una espiral, la sensación y “Dejar un momento aquí” aparecen debajo de esa práctica. No hay pausa, reactivar ni “Lo viví hoy”.
 - En desarrollo se muestran cinco imágenes de prueba desde `src/assets/care-demo/`; están marcadas como `Muestra`, no se guardan ni sincronizan y no forman parte del build productivo.
 
 ### Mi Balance
@@ -259,9 +275,11 @@ Submundos destacados:
 - Es una única pantalla local; no debe reintroducirse una portada o detalle intermedio.
 - La portada no repite el título grande `Núcleo`; conserva el nombre en la navegación y un encabezado semántico oculto para accesibilidad.
 - La melodía se solicita una vez por franja. Si se olvida, **Recordar mi melodía** ilumina el orden correcto en las notas, sin persistir la secuencia en texto.
-- Cada pensamiento se guarda como punto luminoso.
-- El texto se clasifica localmente en una familia emocional con nombre y color.
-- Emociones afines se agrupan y forman zonas de plasma animado.
+- Cada pensamiento se guarda como destello en el paño: núcleo luminoso y anillo. El más reciente es más grande y el anillo se ve en reposo.
+- El paño es la escena (pozo Noche de la misma familia que Constelación y las espirales). No lleva hilo vertical ni anillos concéntricos de astrolabio. El pozo se ve; el borde se suaviza hacia la Noche, sin recorte de navaja ni viñeta que lo apague.
+- El texto se clasifica localmente en una familia emocional con nombre y color. Marfil es crema cálida, no un punto blanco.
+- Emociones afines se agrupan y tiñen el paño con zonas de plasma. Los destellos de una misma familia se separan lo bastante para tocarlos (no se acoplan).
+- La invitación **Escríbelo. Nadie más lo verá.** va centrada encima del paño. El filete de escritura queda debajo, sin caja de vidrio.
 - Tocar un punto abre una tarjeta flotante con texto, emoción, fecha y símbolo; no navega a otra sección.
 - Núcleo nunca se sincroniza, ni siquiera cifrado.
 
@@ -285,7 +303,7 @@ Reglas permanentes:
 - No borrar datos existentes para corregir una interfaz.
 - No renombrar claves históricas sin migración preservadora.
 - Toda migración debe ser versionada en `src/data/migrations.ts`.
-- Versión local de esquema vigente: `CURRENT_SCHEMA_VERSION = 3`.
+- Versión local de esquema vigente: `CURRENT_SCHEMA_VERSION = 4` (añade `momentos: []` a hobbies existentes; no borra el campo histórico `estado`).
 - El backup vigente usa versión 2 y excluye `device_secret`.
 - Los campos privados de nacimiento del perfil se cifran localmente.
 - Los borrados sincronizables se conservan como tombstones mediante `deleted_at`.
@@ -295,14 +313,14 @@ Colecciones sincronizables:
 | Eje remoto | Colecciones locales |
 | --- | --- |
 | `umbral` | `intenciones`, `pulso`, `ideas`, `cultivo`, `umbral_arcanos` |
-| `mundos` | `vinculos`, `companeros`, `decretos`, `plantas`, `hobbies`, `travesias` |
+| `mundos` | `vinculos`, `companeros`, `decretos`, `plantas`, `hobbies`, `travesias`, `locuidado_memoria` |
 | `balance` | `balance_movimientos`, `balance_categorias`, `balance_darumas` |
 | `edad_dorada` | `edad_dorada_declaraciones` |
 
 Datos deliberadamente locales incluyen:
 
 - `nucleo_pensamientos` y cualquier clave cuyo nombre empiece por `nucleo`.
-- `balance_oculto`, `umbral_lumen`, preferencias visuales y estado de sesión.
+- `balance_oculto`, `umbral_lumen`, `decretos_bienvenida`, preferencias visuales y estado de sesión.
 - La sesión de acceso local en `aureo_local_session`; se crea una vez por dispositivo y no contiene correo.
 - `device_secret`.
 - La selección del eje Tailwind en `sessionStorage` (`aureo_tailwind_axis`).
@@ -381,7 +399,10 @@ Cobertura E2E relevante:
 - Mural fotográfico.
 - Tarot animado y movimiento reducido.
 - Plasma y lecturas flotantes de Núcleo.
-- Órbitas de Mi Constelación.
+- Órbitas de Mi Constelación y tooltip de dos toques.
+- Baúl de postales de Travesías (búsqueda Nominatim sin mapa).
+- Ritual de Decretos, bienvenida y “Esto ya es mío”.
+- Espirales de Hobbies y registro de momentos.
 - Daruma y grietas de Edad Dorada.
 - Navegación adaptable, estado, persistencia local, offline y teclado.
 
@@ -426,6 +447,7 @@ Antes de una entrega externa ejecutar nuevamente la suite E2E completa. Las prue
 - Copiar código compilado desde Vercel hacia la base canónica como si fuera fuente.
 - Mantener Tailwind y la presentación original en paralelo por defecto.
 - Cambiar la identidad Noche + Oro por una plantilla genérica.
+- Recortar el aura de los espacios internos al recuadro del contenido (`filter` en `.tw-workspace`, `.workspace-aura` a `width: 100%`, overflow hidden en el workspace). Ver `docs/product/AURA_CAMPO_CONTINUO.md`.
 - Introducir IA, chatbot, consejos automáticos, analítica de Núcleo o gamificación.
 - Exponer claves, tokens, correos de prueba o secretos de Supabase.
 - Publicar, desplegar o modificar la versión web histórica sin solicitud explícita.
@@ -436,6 +458,8 @@ Antes de una entrega externa ejecutar nuevamente la suite E2E completa. Las prue
 - Cuándo promover la experiencia Tailwind al puerto/ruta principal de producción.
 - Validación remota final con múltiples usuarios y conflictos reales.
 - Momento de incorporar Capacitor para Android/iOS, después de estabilizar la PWA.
+
+- Estilos artísticos sumi-e / Ghibli del mural de Lo que cuido, y si se ven dentro de la app o solo al compartir.
 
 Ideas no confirmadas y aplazadas: exportación a Instagram, integración por WhatsApp, imágenes generadas para Hobbies, notificaciones o resúmenes semanales, constructor de ejes, publicación inmediata en tiendas, traducciones y los “tres números únicos” del onboarding. No implementarlas sin decisión explícita.
 

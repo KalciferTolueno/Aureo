@@ -29,6 +29,17 @@ export const signLabels: Record<string, string> = {
   libra: 'Libra', escorpio: 'Escorpio', sagitario: 'Sagitario', capricornio: 'Capricornio', acuario: 'Acuario', piscis: 'Piscis',
 }
 
+export const signColors: Record<string, string> = {
+  aries: '#b86b56', tauro: '#7d9b8a', geminis: '#7897b8', cancer: '#a18aa8',
+  leo: '#c18a55', virgo: '#8b9d78', libra: '#b58da2', escorpio: '#8b667d',
+  sagitario: '#a87868', capricornio: '#71897d', acuario: '#638cad', piscis: '#817daf',
+}
+
+export const SIGN_ORDER = [
+  'aries', 'tauro', 'geminis', 'cancer', 'leo', 'virgo',
+  'libra', 'escorpio', 'sagitario', 'capricornio', 'acuario', 'piscis',
+] as const
+
 export const signRevealPhrases: Record<string, string> = {
   aries: 'El primer fuego no pide permiso.',
   tauro: 'Lo que permanece también es movimiento.',

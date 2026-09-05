@@ -14,6 +14,7 @@ export interface Profile {
   secciones_activas: OptionalSection[]
   capaPremiumActiva: boolean
   onboarding_completo: boolean
+  notificaciones?: boolean
 }
 
 export interface EntityBase {
@@ -33,11 +34,22 @@ export interface Idea extends EntityBase { texto?: string; txt?: string; palabra
 export interface Cultivation extends EntityBase { texto?: string; nombre?: string; simbolo?: string; dias?: Record<string, boolean>; celebrada?: boolean }
 export interface DailyArcana extends EntityBase { fecha: string; nombre: string }
 export interface LinkRecord extends EntityBase { nombre: string; categoria: string; signo?: string; nota?: string }
-export interface Companion extends EntityBase { nombre: string; especie?: string; fecha_importante?: string; nota?: string; imagen?: string }
+export type CompanionSpecies = 'perro' | 'gato' | 'ave' | 'hamster' | 'otra'
+export interface Companion extends EntityBase {
+  nombre: string
+  especie?: string
+  fecha_importante?: string
+  fecha_nacimiento?: string
+  proximo_control?: string
+  nota?: string
+  imagen?: string
+}
 export interface Decree extends EntityBase { texto: string; categoria: 'ser' | 'vivir' | 'tener'; activaciones?: number; cumplido?: boolean; fecha_cumplimiento?: string | null }
-export interface Plant extends EntityBase { nombre: string; tipo?: string; ultimo_riego?: string; frecuencia_dias?: number; nota?: string; imagen?: string }
-export interface Hobby extends EntityBase { nombre: string; emoji?: string; sensacion: string; estado?: 'activo' | 'pausa'; sesiones?: number; ultima_vez?: string; flow_ultimo?: number }
+export interface Plant extends EntityBase { nombre: string; tipo?: string; lugar?: 'interior' | 'exterior'; ultimo_riego?: string; frecuencia_dias?: number; nota?: string; imagen?: string }
+export interface HobbyMoment { id: string; texto: string; fecha: string }
+export interface Hobby extends EntityBase { nombre: string; emoji?: string; sensacion: string; estado?: 'activo' | 'pausa'; sesiones?: number; ultima_vez?: string; flow_ultimo?: number; momentos?: HobbyMoment[] }
 export interface Journey extends EntityBase { nombre: string; estado: 'visitado' | 'decretado'; lat: number; lng: number; nota?: string; momento?: string; fecha?: string }
+export interface CareMemory extends EntityBase { nombre: string; frase?: string; imagen?: string }
 export interface BalanceMovement extends EntityBase { tipo: 'ingreso' | 'gasto'; monto: number; categoria: string; nota?: string; fecha: string; recurrente?: boolean }
 export interface Daruma extends EntityBase { nombre: string; objetivo: number; acumulado: number; color: string; daruma_transferido: boolean }
 export interface GoldenDeclaration extends EntityBase { texto: string; timestamp: string; origen?: string; daruma_color?: string }

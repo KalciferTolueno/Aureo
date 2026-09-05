@@ -1,8 +1,8 @@
 # Continuidad de implementación — Áureo
 
-Última actualización: 28 de agosto de 2026.
+Última actualización: 4 de septiembre de 2026.
 
-> Nota de continuidad: para el inventario exacto de los cambios visuales y de acceso más recientes, leer `docs/changes/2026-08-28-ajustes-ui-y-acceso-local.md`. Ese registro, `docs/AI_HANDOFF.md` y `docs/product/DECISIONES_CLIENTA.md` prevalecen sobre las descripciones históricas de este documento.
+> Nota de continuidad: la revisión de entrega de Mundos del 4-09-2026 está en `docs/changes/2026-09-04-revision-mundos-clienta.md`. Ese registro, `docs/AI_HANDOFF.md` y `docs/product/DECISIONES_CLIENTA.md` prevalecen sobre las descripciones históricas de este documento (incluido el mapa Leaflet de Travesías y el jardín Activo/Pausa de Hobbies).
 
 Este documento permite retomar el trabajo sin depender del historial de conversación. Resume el estado comprobado del repositorio, las decisiones visuales tomadas, la integración de Supabase, el laboratorio Tailwind y la forma segura de continuar.
 
