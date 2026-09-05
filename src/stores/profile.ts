@@ -9,6 +9,7 @@ export function defaultProfile(): Profile {
     email: '', nombre: '', fecha_nacimiento: '', hora_nacimiento: null, lugar_nacimiento: null,
     signo: 'aries', numero_personal: 0, palabraPoder: '', clave_app_hash: '',
     secciones_activas: [], capaPremiumActiva: false, onboarding_completo: false,
+    notificaciones: false,
   }
 }
 

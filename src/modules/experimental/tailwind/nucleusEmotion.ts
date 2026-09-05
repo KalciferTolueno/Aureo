@@ -1,12 +1,12 @@
 import type { NucleusThought } from '@/domain/types'
 
 export const nucleusEmotions = {
-  cosmos: { label: 'Reflexión y duda', color: '#8173B7', x: 28, y: 28 },
-  oro: { label: 'Alegría y gratitud', color: '#C9A86A', x: 72, y: 26 },
-  salvia: { label: 'Calma y alivio', color: '#7DA797', x: 72, y: 70 },
-  ocaso: { label: 'Intensidad y dolor', color: '#B86D5D', x: 28, y: 72 },
-  ciruela: { label: 'Sensibilidad y nostalgia', color: '#9B7D9B', x: 50, y: 48 },
-  marfil: { label: 'Emoción abierta', color: '#F4EFE5', x: 50, y: 82 },
+  cosmos: { label: 'Reflexión y duda', color: '#8173B7', x: 30, y: 30 },
+  oro: { label: 'Alegría y gratitud', color: '#C9A86A', x: 70, y: 30 },
+  salvia: { label: 'Calma y alivio', color: '#7DA797', x: 70, y: 66 },
+  ocaso: { label: 'Intensidad y dolor', color: '#B86D5D', x: 30, y: 66 },
+  ciruela: { label: 'Sensibilidad y nostalgia', color: '#9B7D9B', x: 50, y: 46 },
+  marfil: { label: 'Emoción abierta', color: '#E4CFA8', x: 50, y: 64 },
 } as const
 
 export type NucleusTone = keyof typeof nucleusEmotions
@@ -29,17 +29,66 @@ function thoughtHash(value: string) {
   return [...value].reduce((hash, character) => ((hash * 31) + character.charCodeAt(0)) >>> 0, 17)
 }
 
+const STAR_MARGIN = 14
+const STAR_SEPARATION = 20
+
+function clampStar(value: number) {
+  return Math.min(100 - STAR_MARGIN, Math.max(STAR_MARGIN, value))
+}
+
+function separateNucleusStars(entries: { x: number; y: number }[]) {
+  for (let pass = 0; pass < 16; pass++) {
+    let moved = false
+    for (let i = 0; i < entries.length; i++) {
+      for (let j = i + 1; j < entries.length; j++) {
+        const a = entries[i]!
+        const b = entries[j]!
+        const dx = b.x - a.x
+        const dy = b.y - a.y
+        const dist = Math.hypot(dx, dy) || 0.01
+        if (dist >= STAR_SEPARATION) continue
+        const push = (STAR_SEPARATION - dist) / 2
+        const ux = dx / dist
+        const uy = dy / dist
+        a.x = clampStar(a.x - ux * push)
+        a.y = clampStar(a.y - uy * push)
+        b.x = clampStar(b.x + ux * push)
+        b.y = clampStar(b.y + uy * push)
+        moved = true
+      }
+    }
+    if (!moved) break
+  }
+}
+
 export function groupNucleusThoughts(items: NucleusThought[]) {
   const indexes = Object.fromEntries(nucleusEmotionTones.map((tone) => [tone, 0])) as Record<NucleusTone, number>
-  return items.map((thought) => {
+  const recencyById = new Map(
+    [...items]
+      .sort((a, b) => Date.parse(b.timestamp) - Date.parse(a.timestamp) || b.id.localeCompare(a.id))
+      .map((thought, rank) => [thought.id, rank] as const),
+  )
+  const grouped = items.map((thought) => {
     const tone = normalizeNucleusTone(thought.tono)
     const emotion = nucleusEmotions[tone]
     const index = indexes[tone]++
+    const freshness = recencyById.get(thought.id) ?? items.length
     const seed = thoughtHash(`${thought.id}:${thought.texto}`)
     const angle = ((index * 137.508) + (seed % 47)) * Math.PI / 180
-    const radius = index === 0 ? 0 : Math.min(12, 4.5 + Math.sqrt(index) * 3.1)
-    return { thought, tone, emotion, index, x: emotion.x + Math.cos(angle) * radius, y: emotion.y + Math.sin(angle) * radius }
+    const radius = 6 + Math.sqrt(index) * 7.4
+    return {
+      thought,
+      tone,
+      emotion,
+      index,
+      freshness,
+      newest: freshness === 0,
+      x: clampStar(emotion.x + Math.cos(angle) * radius),
+      y: clampStar(emotion.y + Math.sin(angle) * radius),
+    }
   })
+  separateNucleusStars(grouped)
+  return grouped
 }
 
 export function activeNucleusEmotionClusters(grouped: ReturnType<typeof groupNucleusThoughts>) {

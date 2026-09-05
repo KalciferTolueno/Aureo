@@ -35,6 +35,7 @@ function fromRemote(remote: RemoteProfile, email: string): Profile {
       value === 'companeros' || value === 'plantas'),
     capaPremiumActiva: remote.premium_active,
     onboarding_completo: remote.onboarding_complete,
+    notificaciones: false,
   }
 }
 
@@ -58,7 +59,9 @@ export async function pullProfile() {
     .maybeSingle()
   if (error) throw error
   if (!data) return null
+  const current = await profileRepository.load()
   const profile = fromRemote(data as RemoteProfile, userData.user.email ?? '')
+  profile.notificaciones = current?.notificaciones ?? false
   await profileRepository.save(profile)
   return profile
 }

@@ -16,7 +16,7 @@ function refresh() {
   const total = root.scrollHeight
   const overflow = total - view
   const trackHeight = track.value?.clientHeight ?? view
-  if (overflow <= 1) {
+  if (overflow <= 4) {
     visible.value = false
     return
   }
